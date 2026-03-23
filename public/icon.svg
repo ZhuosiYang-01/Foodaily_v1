@@ -1,0 +1,13 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆角矩形 -->
+  <rect width="512" height="512" rx="128" fill="#FDFCFB"/>
+  
+  <!-- 装饰性圆形（餐盘意象） -->
+  <circle cx="256" cy="256" r="180" stroke="#846341" stroke-width="12" stroke-dasharray="20 15" opacity="0.3"/>
+  
+  <!-- 艺术化 F -->
+  <path d="M210 160V352M210 160H310M210 256H285" stroke="#846341" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 象征“定格/记录”的小圆点 -->
+  <circle cx="310" cy="160" r="16" fill="#846341"/>
+</svg>

@@ -29,27 +29,19 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-3', name: '饮品', icon: '🥤', supportsTaste: false, order: 2 },
 ];
 
-const INITIAL_WORKS: Work[] = [
-  { id: 'w-1', categoryId: 'cat-1', name: '炸鸡', coverImage: '🍗', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
-  { id: 'w-2', categoryId: 'cat-1', name: '手抓饼', coverImage: '🫓', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 5, updatedAt: Date.now() - 86400000 * 5 },
-  { id: 'w-3', categoryId: 'cat-2', name: '蛋挞', coverImage: '🥧', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 3, updatedAt: Date.now() - 86400000 * 3 },
-  { id: 'w-4', categoryId: 'cat-3', name: '奶茶', coverImage: '🧋', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 1, updatedAt: Date.now() - 86400000 * 1 },
-];
+const INITIAL_WORKS: Work[] = [];
 
-const INITIAL_RECORDS: RecordEntry[] = [
-  { id: 'r-1', workId: 'w-1', date: new Date().toISOString().split('T')[0], title: '脆皮炸鸡', evaluation: '外酥里嫩，火候刚好', notes: '下次多加点辣椒粉', mainImage: '🍗', isEmojiMain: true, extraImages: [], createdAt: Date.now() - 3600000 },
-  { id: 'r-2', workId: 'w-2', date: new Date(Date.now() - 86400000).toISOString().split('T')[0], title: '全家福手抓饼', evaluation: '加了两个蛋，非常满足', notes: '酱汁刷得有点多', mainImage: '🫓', isEmojiMain: true, extraImages: [], createdAt: Date.now() - 86400000 - 3600000 },
-  { id: 'r-3', workId: 'w-3', date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0], title: '葡式蛋挞', evaluation: '奶香浓郁，皮很酥', notes: '烤箱温度可以再高5度', mainImage: '🥧', isEmojiMain: true, extraImages: [], createdAt: Date.now() - 86400000 * 2 - 3600000 },
-  { id: 'r-4', workId: 'w-4', date: new Date().toISOString().split('T')[0], title: '珍珠奶茶', evaluation: '珍珠很Q弹', notes: '三分糖刚好', mainImage: '🧋', isEmojiMain: true, extraImages: [], createdAt: Date.now() - 1800000 },
-];
+const INITIAL_RECORDS: RecordEntry[] = [];
+
+const STORAGE_KEY = 'foodaily_v2_data';
+const INITIALIZED_KEY = 'foodaily_v2_initialized';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<AppData>(() => {
-    const saved = localStorage.getItem('foodaily_data');
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // 确保基本结构完整
         if (parsed.categories && parsed.works && parsed.records) {
           return parsed;
         }
@@ -61,14 +53,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    localStorage.setItem('foodaily_data', JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [data]);
 
   useEffect(() => {
-    const initialized = localStorage.getItem('foodaily_initialized');
-    if (!initialized && data.works.length === 0 && data.records.length === 0) {
-      loadDemoData();
-      localStorage.setItem('foodaily_initialized', 'true');
+    const initialized = localStorage.getItem(INITIALIZED_KEY);
+    if (!initialized) {
+      // 强制清空一次旧版本的数据（如果有的话）
+      localStorage.removeItem('foodaily_data');
+      localStorage.removeItem('foodaily_initialized');
+      
+      localStorage.setItem(INITIALIZED_KEY, 'true');
+      // 确保当前状态也是空的
+      if (data.works.length > 0 || data.records.length > 0) {
+        setData({ categories: DEFAULT_CATEGORIES, works: [], records: [] });
+      }
     }
   }, []);
 
