@@ -4,7 +4,7 @@ import { ChevronLeft, ArrowUpDown, History, Star, Calendar } from 'lucide-react'
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 
 type SortType = 'recent' | 'most_frequent' | 'first_time';
 
@@ -72,7 +72,7 @@ const CategoryDetailPage = () => {
             <SelectContent>
               <SelectItem value="recent">最近制作</SelectItem>
               <SelectItem value="most_frequent">做过最多</SelectItem>
-              <SelectItem value="first_time">首次制作</SelectItem>
+              <SelectItem value="first_time">最早制作</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -95,7 +95,11 @@ const CategoryDetailPage = () => {
                 </div>
                 <div className="p-2 space-y-0.5 text-center">
                   <h4 className="text-[10px] font-bold text-gray-900 truncate">{work.name}</h4>
-                  <p className="text-[8px] text-gray-400 font-bold">{work.recordCount} 次</p>
+                  <p className="text-[8px] text-gray-400 font-bold">
+                    {sortBy === 'recent' && (work.recentDate ? formatDate(work.recentDate) : '暂无')}
+                    {sortBy === 'most_frequent' && `已做 ${work.recordCount} 次`}
+                    {sortBy === 'first_time' && (work.firstDate ? formatDate(work.firstDate) : '暂无')}
+                  </p>
                 </div>
               </Link>
             ))}

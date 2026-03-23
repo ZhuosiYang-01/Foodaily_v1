@@ -4,6 +4,7 @@ import { ChevronLeft, Search as SearchIcon, X, ArrowRight, History } from 'lucid
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { formatDate } from '@/lib/utils';
 
 const SearchPage = () => {
   const [query, setQuery] = useState('');
@@ -98,7 +99,7 @@ const SearchPage = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <History size={10} /> {record.date.replace(/-/g, '.')}
+                            <History size={10} /> {formatDate(record.date)}
                           </p>
                           <h4 className="text-sm font-bold text-gray-900 truncate">{record.title}</h4>
                           <p className="text-[10px] text-gray-400 truncate italic">{work?.name}</p>

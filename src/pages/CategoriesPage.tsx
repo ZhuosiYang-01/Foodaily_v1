@@ -45,25 +45,25 @@ const CategoriesPage = () => {
           <Link 
             key={cat.id} 
             to={`/category/${cat.id}`}
-            className="block bg-white rounded-3xl p-6 shadow-sm border border-gray-50 group hover:shadow-md transition-shadow"
+            className="block bg-card rounded-3xl p-6 shadow-sm border border-border/50 group hover:shadow-md transition-shadow"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="space-y-1">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                   <span>{cat.icon}</span>
                   <span>{cat.name}</span>
                 </h3>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   共 {cat.workCount} 个作品 · 已记录 {cat.recordCount} 次
                 </p>
               </div>
-              <ChevronRight size={20} className="text-gray-300 group-hover:text-primary transition-colors" />
+              <ChevronRight size={20} className="text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
 
             {cat.previewWorks.length > 0 ? (
               <div className="flex gap-3">
                 {cat.previewWorks.map(work => (
-                  <div key={work.id} className="flex-1 aspect-square rounded-2xl overflow-hidden bg-gray-50 shadow-inner relative">
+                  <div key={work.id} className="flex-1 aspect-square rounded-2xl overflow-hidden bg-background shadow-inner relative">
                     {work.isEmojiCover ? (
                       <div className="w-full h-full flex items-center justify-center text-3xl">{work.coverImage}</div>
                     ) : (
@@ -75,14 +75,14 @@ const CategoriesPage = () => {
                   </div>
                 ))}
                 {cat.previewWorks.length < 3 && Array.from({ length: 3 - cat.previewWorks.length }).map((_, i) => (
-                  <div key={i} className="flex-1 aspect-square rounded-2xl border-2 border-dashed border-gray-50 flex items-center justify-center text-gray-100 italic text-[10px]">
+                  <div key={i} className="flex-1 aspect-square rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground/30 italic text-[10px]">
                     空
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="py-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-100">
-                <p className="text-[10px] text-gray-400 italic">暂无作品</p>
+              <div className="py-8 text-center bg-background rounded-2xl border border-dashed border-border/50">
+                <p className="text-[10px] text-muted-foreground italic">暂无作品</p>
               </div>
             )}
           </Link>

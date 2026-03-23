@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   --color-border: hsl(var(--border));
@@ -38,48 +40,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 35 20% 99%;
+    --foreground: 20 10% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 20 10% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --popover-foreground: 20 10% 15%;
+    --primary: 35 45% 45%;
+    --primary-foreground: 35 100% 98%;
+    --secondary: 35 30% 95%;
+    --secondary-foreground: 35 45% 20%;
+    --muted: 35 20% 95%;
+    --muted-foreground: 35 15% 45%;
+    --accent: 35 30% 95%;
+    --accent-foreground: 35 45% 20%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142.1 76.2% 36.3%;
-    --radius: 0.75rem;
+    --border: 35 20% 90%;
+    --input: 35 20% 90%;
+    --ring: 35 45% 45%;
+    --radius: 1.25rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.4 96.6% 11.4%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 35 20% 5%;
+    --foreground: 35 10% 98%;
+    --card: 35 20% 8%;
+    --card-foreground: 35 10% 98%;
+    --popover: 35 20% 8%;
+    --popover-foreground: 35 10% 98%;
+    --primary: 35 45% 55%;
+    --primary-foreground: 35 20% 5%;
+    --secondary: 35 20% 15%;
+    --secondary-foreground: 35 10% 98%;
+    --muted: 35 20% 15%;
+    --muted-foreground: 35 10% 65%;
+    --accent: 35 20% 15%;
+    --accent-foreground: 35 10% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 142.1 70.6% 45.3%;
+    --border: 35 20% 15%;
+    --input: 35 20% 15%;
+    --ring: 35 45% 55%;
   }
 }
 
@@ -90,5 +92,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  .serif {
+    @apply font-serif;
   }
 }

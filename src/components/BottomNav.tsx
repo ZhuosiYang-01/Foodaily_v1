@@ -13,7 +13,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-100 flex items-center justify-around h-16 px-2 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-card border-t border-border/50 flex items-center justify-around h-16 px-2 z-50">
       {navItems.map((item) => (
         <NavLink
           key={item.to}
@@ -21,7 +21,7 @@ const BottomNav = () => {
           className={({ isActive }) =>
             cn(
               "flex flex-col items-center justify-center transition-colors",
-              item.isMain ? "text-primary -mt-8 bg-white rounded-full p-1 shadow-lg" : (isActive ? "text-primary" : "text-gray-400")
+              item.isMain ? "text-primary -mt-8 bg-card rounded-full p-1 shadow-lg" : (isActive ? "text-primary" : "text-muted-foreground")
             )
           }
         >

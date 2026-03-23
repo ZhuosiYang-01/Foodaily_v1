@@ -9,7 +9,7 @@ interface AppContextType {
   moveWorksToCategory: (fromCategoryId: string, toCategoryId: string) => void;
   reorderCategories: (categories: Category[]) => void;
   addRecord: (record: Omit<RecordEntry, 'id' | 'createdAt'>, workInfo: { name: string; categoryId: string; coverImage: string; isEmoji: boolean }) => string;
-  updateRecord: (id: string, record: Partial<RecordEntry>) => void;
+  updateRecord: (id: string, record: Partial<RecordEntry>, workInfo?: { name: string; categoryId: string }) => void;
   deleteRecord: (id: string) => void;
   updateWork: (id: string, work: Partial<Work>) => void;
   deleteWork: (id: string) => void;
@@ -30,10 +30,10 @@ const DEFAULT_CATEGORIES: Category[] = [
 ];
 
 const INITIAL_WORKS: Work[] = [
-  { id: 'w-1', categoryId: 'cat-1', name: '炸鸡', coverImage: '🍗', isEmojiCover: true, createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
-  { id: 'w-2', categoryId: 'cat-1', name: '手抓饼', coverImage: '🫓', isEmojiCover: true, createdAt: Date.now() - 86400000 * 5, updatedAt: Date.now() - 86400000 * 5 },
-  { id: 'w-3', categoryId: 'cat-2', name: '蛋挞', coverImage: '🥧', isEmojiCover: true, createdAt: Date.now() - 86400000 * 3, updatedAt: Date.now() - 86400000 * 3 },
-  { id: 'w-4', categoryId: 'cat-3', name: '奶茶', coverImage: '🧋', isEmojiCover: true, createdAt: Date.now() - 86400000 * 1, updatedAt: Date.now() - 86400000 * 1 },
+  { id: 'w-1', categoryId: 'cat-1', name: '炸鸡', coverImage: '🍗', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
+  { id: 'w-2', categoryId: 'cat-1', name: '手抓饼', coverImage: '🫓', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 5, updatedAt: Date.now() - 86400000 * 5 },
+  { id: 'w-3', categoryId: 'cat-2', name: '蛋挞', coverImage: '🥧', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 3, updatedAt: Date.now() - 86400000 * 3 },
+  { id: 'w-4', categoryId: 'cat-3', name: '奶茶', coverImage: '🧋', isEmojiCover: true, isManualCover: false, createdAt: Date.now() - 86400000 * 1, updatedAt: Date.now() - 86400000 * 1 },
 ];
 
 const INITIAL_RECORDS: RecordEntry[] = [
@@ -141,6 +141,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const existingWork = data.works.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
       if (existingWork) {
         workId = existingWork.id;
+        // 如果不是手动设置的封面，更新为最新记录的封面
+        updatedWorks = updatedWorks.map(w => w.id === workId ? { 
+          ...w, 
+          updatedAt: now,
+          coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
+          isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
+        } : w);
       } else {
         workId = crypto.randomUUID();
         updatedWorks.push({
@@ -149,13 +156,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           name: workInfo.name,
           coverImage: workInfo.coverImage,
           isEmojiCover: workInfo.isEmoji,
+          isManualCover: false,
           createdAt: now,
           updatedAt: now,
         });
       }
     } else {
       // 更新已有作品的 updatedAt
-      updatedWorks = updatedWorks.map(w => w.id === workId ? { ...w, updatedAt: now } : w);
+      updatedWorks = updatedWorks.map(w => w.id === workId ? { 
+        ...w, 
+        updatedAt: now,
+        coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
+        isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
+      } : w);
     }
 
     const newRecord: RecordEntry = {
@@ -175,24 +188,144 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return recordId;
   };
 
-  const updateRecord = (id: string, record: Partial<RecordEntry>) => {
-    setData(prev => ({
-      ...prev,
-      records: prev.records.map(r => r.id === id ? { ...r, ...record } : r),
-    }));
+  const updateRecord = (id: string, record: Partial<RecordEntry>, workInfo?: { name: string; categoryId: string }) => {
+    setData(prev => {
+      let updatedRecords = [...prev.records];
+      let updatedWorks = [...prev.works];
+      const now = Date.now();
+
+      const recordToUpdate = prev.records.find(r => r.id === id);
+      if (!recordToUpdate) return prev;
+
+      let newWorkId = record.workId || recordToUpdate.workId;
+
+      // 如果提供了 workInfo，说明可能需要更换作品
+      if (workInfo) {
+        const oldWorkId = recordToUpdate.workId;
+        const existingWork = prev.works.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
+        
+        if (existingWork) {
+          newWorkId = existingWork.id;
+          // 更新已有作品的 updatedAt 和封面（如果需要）
+          updatedWorks = updatedWorks.map(w => w.id === newWorkId ? {
+            ...w,
+            updatedAt: now,
+            coverImage: w.isManualCover ? w.coverImage : (record.mainImage || recordToUpdate.mainImage),
+            isEmojiCover: w.isManualCover ? w.isEmojiCover : (record.isEmojiMain ?? recordToUpdate.isEmojiMain)
+          } : w);
+        } else {
+          // 创建新作品
+          newWorkId = crypto.randomUUID();
+          updatedWorks.push({
+            id: newWorkId,
+            categoryId: workInfo.categoryId,
+            name: workInfo.name,
+            coverImage: record.mainImage || recordToUpdate.mainImage,
+            isEmojiCover: record.isEmojiMain ?? recordToUpdate.isEmojiMain,
+            isManualCover: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+
+        // 如果作品发生了变化，处理旧作品的封面
+        if (newWorkId !== oldWorkId) {
+          const oldWork = updatedWorks.find(w => w.id === oldWorkId);
+          if (oldWork && !oldWork.isManualCover) {
+            // 找出旧作品剩余的记录（排除当前正在更新的这条）
+            const remainingRecords = updatedRecords.filter(r => r.workId === oldWorkId && r.id !== id);
+            const latestRecord = [...remainingRecords].sort((a, b) => b.date.localeCompare(a.date))[0];
+            
+            if (latestRecord) {
+              updatedWorks = updatedWorks.map(w => w.id === oldWorkId ? {
+                ...w,
+                coverImage: latestRecord.mainImage,
+                isEmojiCover: latestRecord.isEmojiMain
+              } : w);
+            }
+          }
+        }
+      }
+
+      // 更新记录
+      updatedRecords = updatedRecords.map(r => r.id === id ? { ...r, ...record, workId: newWorkId } : r);
+
+      // 如果更新了图片，且该记录是所属作品的最新记录，且作品封面不是手动设置的，则更新作品封面
+      if ('mainImage' in record || 'isEmojiMain' in record || workInfo) {
+        const targetRecord = updatedRecords.find(r => r.id === id);
+        if (targetRecord) {
+          const work = updatedWorks.find(w => w.id === targetRecord.workId);
+          if (work && !work.isManualCover) {
+            // 检查是否是最新记录（按日期排序）
+            const workRecords = updatedRecords.filter(r => r.workId === work.id);
+            const latestRecord = [...workRecords].sort((a, b) => b.date.localeCompare(a.date))[0];
+            
+            if (latestRecord && latestRecord.id === id) {
+              updatedWorks = updatedWorks.map(w => w.id === work.id ? {
+                ...w,
+                coverImage: targetRecord.mainImage,
+                isEmojiCover: targetRecord.isEmojiMain
+              } : w);
+            }
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        records: updatedRecords,
+        works: updatedWorks
+      };
+    });
   };
 
   const deleteRecord = (id: string) => {
-    setData(prev => ({
-      ...prev,
-      records: prev.records.filter(r => r.id !== id),
-    }));
+    setData(prev => {
+      const recordToDelete = prev.records.find(r => r.id === id);
+      const updatedRecords = prev.records.filter(r => r.id !== id);
+      let updatedWorks = prev.works;
+
+      if (recordToDelete) {
+        const work = prev.works.find(w => w.id === recordToDelete.workId);
+        if (work && !work.isManualCover) {
+          // 找出该作品剩余的记录
+          const remainingRecords = updatedRecords.filter(r => r.workId === work.id);
+          const latestRecord = [...remainingRecords].sort((a, b) => b.date.localeCompare(a.date))[0];
+          
+          if (latestRecord) {
+            updatedWorks = prev.works.map(w => w.id === work.id ? {
+              ...w,
+              coverImage: latestRecord.mainImage,
+              isEmojiCover: latestRecord.isEmojiMain
+            } : w);
+          }
+          // 如果没有剩余记录，保持原样或可以考虑重置，但通常保持最后一张图比较好
+        }
+      }
+
+      return {
+        ...prev,
+        records: updatedRecords,
+        works: updatedWorks
+      };
+    });
   };
 
   const updateWork = (id: string, work: Partial<Work>) => {
     setData(prev => ({
       ...prev,
-      works: prev.works.map(w => w.id === id ? { ...w, ...work } : w),
+      works: prev.works.map(w => {
+        if (w.id === id) {
+          const updatedWork = { ...w, ...work };
+          // 只有当封面图或封面类型真正发生变化时，才标记为手动
+          if (('coverImage' in work && work.coverImage !== w.coverImage) || 
+              ('isEmojiCover' in work && work.isEmojiCover !== w.isEmojiCover)) {
+            updatedWork.isManualCover = true;
+          }
+          return updatedWork;
+        }
+        return w;
+      }),
     }));
   };
 

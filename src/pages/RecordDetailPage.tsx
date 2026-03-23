@@ -4,6 +4,7 @@ import { ChevronLeft, Edit3, Trash2, Calendar, Star, StickyNote, Image as ImageI
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/utils';
 
 const RecordDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,37 +16,16 @@ const RecordDetailPage = () => {
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [isPendingDelete, setIsPendingDelete] = useState(false);
-  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
-    };
-  }, []);
 
   if (!record) return <div className="p-8 text-center text-gray-400">记录不存在</div>;
 
   const handleDelete = () => {
-    setShowConfirmDelete(false);
-    setIsPendingDelete(true);
-    
-    deleteTimeoutRef.current = setTimeout(() => {
-      deleteRecord(record.id);
-      navigate(-1);
-    }, 5000);
-  };
-
-  const cancelDelete = () => {
-    if (deleteTimeoutRef.current) {
-      clearTimeout(deleteTimeoutRef.current);
-      deleteTimeoutRef.current = null;
-    }
-    setIsPendingDelete(false);
+    deleteRecord(record.id);
+    navigate(-1);
   };
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-in fade-in duration-500">
+    <div className="min-h-screen bg-background pb-24 animate-in fade-in duration-500">
       {/* Header Image */}
       <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
         <button 
@@ -89,7 +69,7 @@ const RecordDetailPage = () => {
           </Badge>
           <h1 className="text-3xl font-bold serif leading-tight">{record.title}</h1>
           <p className="text-sm opacity-80 mt-1 font-medium flex items-center gap-1.5">
-            <Calendar size={14} /> {record.date.replace(/-/g, '.')}
+            <Calendar size={14} /> {formatDate(record.date)}
           </p>
         </div>
       </div>
@@ -100,10 +80,10 @@ const RecordDetailPage = () => {
         <div className="grid grid-cols-1 gap-8">
           {record.evaluation && (
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                 <Star size={14} className="text-primary" /> 评价
               </h3>
-              <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/50 p-4 rounded-2xl border border-gray-50 italic">
+              <p className="text-sm text-foreground/80 leading-relaxed bg-card p-4 rounded-2xl border border-border/50 italic">
                 {record.evaluation}
               </p>
             </div>
@@ -111,10 +91,10 @@ const RecordDetailPage = () => {
 
           {record.notes && (
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                 <StickyNote size={14} className="text-primary" /> 备忘
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed bg-gray-50/50 p-4 rounded-2xl border border-gray-50">
+              <p className="text-sm text-foreground/70 leading-relaxed bg-card p-4 rounded-2xl border border-border/50">
                 {record.notes}
               </p>
             </div>
@@ -138,21 +118,21 @@ const RecordDetailPage = () => {
         )}
 
         {/* Action Buttons */}
-        <div className="pt-8 border-t border-gray-50">
+        <div className="pt-8 border-t border-border/50">
           <Link 
             to={`/work/${work?.id}`}
-            className="flex items-center justify-between w-full p-4 bg-gray-50 rounded-2xl group hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-between w-full p-4 bg-card rounded-2xl group hover:bg-accent transition-colors border border-border/50"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-xl shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center text-xl shadow-sm">
                 {work?.isEmojiCover ? work.coverImage : (work?.coverImage ? <img src={work.coverImage} className="w-full h-full object-cover rounded-xl" /> : '🍽️')}
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">查看该作品全部记录</p>
-                <p className="text-sm font-bold text-gray-900">{work?.name}</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">查看该作品全部记录</p>
+                <p className="text-sm font-bold text-foreground">{work?.name}</p>
               </div>
             </div>
-            <ArrowRight size={18} className="text-gray-300 group-hover:text-primary transition-colors" />
+            <ArrowRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors" />
           </Link>
         </div>
 
@@ -167,26 +147,9 @@ const RecordDetailPage = () => {
               </div>
               <div className="flex flex-col gap-3">
                 <Button variant="destructive" onClick={handleDelete} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">确认删除</Button>
-                <Button variant="ghost" onClick={() => setShowConfirmDelete(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">取消</Button>
+                <Button variant="ghost" onClick={() => setShowConfirmDelete(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">返回</Button>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Undo Toast */}
-        {isPendingDelete && (
-          <div className="fixed bottom-24 left-4 right-4 bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300 z-50">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              <p className="text-xs font-bold">记录已删除</p>
-            </div>
-            <Button 
-              onClick={cancelDelete}
-              variant="ghost" 
-              className="h-8 px-4 text-primary hover:text-primary/80 text-xs font-bold uppercase tracking-widest"
-            >
-              <RotateCcw size={14} className="mr-1.5" /> 撤销
-            </Button>
           </div>
         )}
       </div>

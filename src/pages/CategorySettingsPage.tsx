@@ -25,7 +25,7 @@ const CategorySettingsPage = () => {
   const [targetCategoryId, setTargetCategoryId] = useState<string>('');
   
   const [isPendingDelete, setIsPendingDelete] = useState<string | null>(null);
-  const deleteTimeoutRef = React.useRef<any>(null);
+  const [pendingForceDelete, setPendingForceDelete] = useState(false);
 
   const sortedCategories = useMemo(() => {
     // 过滤掉正在等待删除的分类
@@ -33,12 +33,6 @@ const CategorySettingsPage = () => {
       .filter(c => c.id !== isPendingDelete)
       .sort((a, b) => a.order - b.order);
   }, [data.categories, isPendingDelete]);
-
-  React.useEffect(() => {
-    return () => {
-      if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
-    };
-  }, []);
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -72,30 +66,24 @@ const CategorySettingsPage = () => {
     const cat = data.categories.find(c => c.id === id);
     if (!cat) return;
     
-    const hasWorks = data.works.some(w => w.categoryId === id);
-    if (hasWorks && !force) {
-      setConfirmDeleteId(id);
-      setShowMoveOptions(true);
-      return;
-    }
-
     // 进入待删除状态
     setConfirmDeleteId(null);
     setShowMoveOptions(false);
     setIsPendingDelete(id);
-    
-    deleteTimeoutRef.current = setTimeout(() => {
-      deleteCategory(id, force);
+    setPendingForceDelete(force);
+  };
+
+  const finalizeDelete = () => {
+    if (isPendingDelete) {
+      deleteCategory(isPendingDelete, pendingForceDelete);
       setIsPendingDelete(null);
-    }, 5000);
+      setPendingForceDelete(false);
+    }
   };
 
   const cancelDelete = () => {
-    if (deleteTimeoutRef.current) {
-      clearTimeout(deleteTimeoutRef.current);
-      deleteTimeoutRef.current = null;
-    }
     setIsPendingDelete(null);
+    setPendingForceDelete(false);
   };
 
   const handleMoveAndDelete = (id: string) => {
@@ -167,7 +155,16 @@ const CategorySettingsPage = () => {
                       <Edit3 size={16} />
                     </button>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(cat.id); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        const hasWorks = data.works.some(w => w.categoryId === cat.id);
+                        setConfirmDeleteId(cat.id);
+                        if (hasWorks) {
+                          setShowMoveOptions(true);
+                        } else {
+                          setShowMoveOptions(false);
+                        }
+                      }}
                       className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 size={16} />
@@ -182,76 +179,6 @@ const CategorySettingsPage = () => {
                   onCheckedChange={(checked) => updateCategory(cat.id, { supportsTaste: checked })}
                 />
               </div>
-
-              {/* Inline Delete Confirmation */}
-              {confirmDeleteId === cat.id && (
-                <div className="absolute inset-0 bg-white/98 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-6 animate-in fade-in duration-200">
-                  {!showMoveOptions ? (
-                    <>
-                      <p className="text-xs font-bold text-gray-900 mb-4">确认删除吗？</p>
-                      <div className="flex gap-3 w-full">
-                        <Button variant="outline" onClick={() => setConfirmDeleteId(null)} className="flex-1 h-9 rounded-xl text-[10px] font-bold uppercase tracking-widest">取消</Button>
-                        <Button variant="destructive" onClick={() => handleDelete(cat.id)} className="flex-1 h-9 rounded-xl text-[10px] font-bold uppercase tracking-widest">确认删除</Button>
-                      </div>
-                    </>
-                  ) : (
-                      <div className="w-full space-y-4">
-                      <div className="text-center space-y-1">
-                        <p className="text-[11px] font-bold text-gray-900">该分类下已有作品及记录</p>
-                        <p className="text-[10px] text-gray-400">请选择处理方式：</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Button 
-                          variant="destructive" 
-                          onClick={() => handleDelete(cat.id, true)} 
-                          className="w-full h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest"
-                        >
-                          连同作品和记录一起删除
-                        </Button>
-                        <div className="space-y-2 pt-2 border-t border-gray-50">
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">将作品迁移至其他类别：</p>
-                          <div className="flex gap-2">
-                            <Select value={targetCategoryId} onValueChange={setTargetCategoryId}>
-                              <SelectTrigger className="flex-1 h-9 rounded-xl text-[10px] font-bold">
-                                <SelectValue placeholder="选择目标分类" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {data.categories.filter(c => c.id !== cat.id).length > 0 ? (
-                                  data.categories.filter(c => c.id !== cat.id).map(c => (
-                                    <SelectItem key={c.id} value={c.id}>{c.icon} {c.name}</SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="none" disabled>无可用分类</SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <Button 
-                              disabled={!targetCategoryId}
-                              onClick={() => handleMoveAndDelete(cat.id)}
-                              className="h-9 rounded-xl px-4 text-[10px] font-bold uppercase tracking-widest"
-                            >
-                              确认移动
-                            </Button>
-                          </div>
-                          <button 
-                            onClick={() => { setConfirmDeleteId(null); setShowMoveOptions(false); setIsAdding(true); }}
-                            className="text-[10px] text-primary font-bold hover:underline"
-                          >
-                            + 新增类别
-                          </button>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => { setConfirmDeleteId(null); setShowMoveOptions(false); setTargetCategoryId(''); }} 
-                          className="w-full h-9 text-[10px] font-bold text-gray-400 uppercase tracking-widest"
-                        >
-                          取消
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -260,16 +187,24 @@ const CategorySettingsPage = () => {
         {isPendingDelete && (
           <div className="fixed bottom-24 left-4 right-4 bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300 z-50">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              <p className="text-xs font-bold">分类及相关记录已删除</p>
+              <p className="text-xs font-bold">分类已删除</p>
             </div>
-            <Button 
-              onClick={cancelDelete}
-              variant="ghost" 
-              className="h-8 px-4 text-primary hover:text-primary/80 text-xs font-bold uppercase tracking-widest"
-            >
-              <RotateCcw size={14} className="mr-1.5" /> 撤销
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={cancelDelete}
+                variant="ghost" 
+                className="h-8 px-4 text-primary hover:text-primary/80 text-xs font-bold uppercase tracking-widest"
+              >
+                撤销
+              </Button>
+              <Button 
+                onClick={finalizeDelete}
+                variant="ghost" 
+                className="h-8 px-4 text-gray-400 hover:text-white text-xs font-bold uppercase tracking-widest"
+              >
+                完成
+              </Button>
+            </div>
           </div>
         )}
 
@@ -316,6 +251,98 @@ const CategorySettingsPage = () => {
           </Button>
         )}
       </div>
+
+      {/* Global Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] p-6 w-full max-w-[360px] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+            {!showMoveOptions ? (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-bold text-gray-900">确认删除该分类吗？</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setConfirmDeleteId(null)} 
+                    className="flex-1 h-12 rounded-2xl text-xs font-bold uppercase tracking-widest"
+                  >
+                    返回
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleDelete(confirmDeleteId)} 
+                    className="flex-1 h-12 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-red-500/20"
+                  >
+                    确认删除
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-bold text-red-500">删除此分类会删除所有的作品和记录</p>
+                  <p className="text-xs text-gray-400">请选择处理方式</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleDelete(confirmDeleteId, true)} 
+                    className="w-full h-12 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-red-500/20"
+                  >
+                    确认删除全部
+                  </Button>
+                  
+                  <div className="relative flex items-center justify-center py-1">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-gray-100"></span>
+                    </div>
+                    <span className="relative px-4 bg-white text-[10px] font-bold text-gray-300 uppercase tracking-widest">或</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center">迁移至其他分类</p>
+                    <div className="flex flex-col gap-2">
+                      <Select value={targetCategoryId} onValueChange={setTargetCategoryId}>
+                        <SelectTrigger className="w-full h-10 rounded-2xl text-xs font-bold border-gray-100">
+                          <SelectValue placeholder="选择目标分类" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-gray-100">
+                          {data.categories.filter(c => c.id !== confirmDeleteId).length > 0 ? (
+                            data.categories.filter(c => c.id !== confirmDeleteId).map(c => (
+                              <SelectItem key={c.id} value={c.id} className="rounded-xl">{c.icon} {c.name}</SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="none" disabled>无可用分类</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        disabled={!targetCategoryId}
+                        onClick={() => handleMoveAndDelete(confirmDeleteId)}
+                        className="w-full h-10 rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
+                      >
+                        确认移动并删除
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-1 text-center">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => { setConfirmDeleteId(null); setShowMoveOptions(false); setTargetCategoryId(''); }} 
+                      className="h-9 text-xs font-bold text-gray-400 uppercase tracking-widest hover:bg-transparent hover:text-gray-900"
+                    >
+                      返回
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

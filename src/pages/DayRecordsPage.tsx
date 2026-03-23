@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, Calendar } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/lib/utils';
 
 const DayRecordsPage = () => {
   const [searchParams] = useSearchParams();
@@ -25,7 +26,7 @@ const DayRecordsPage = () => {
           <ChevronLeft size={24} />
         </button>
         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
-          <Calendar size={16} className="text-primary" /> {date.replace(/-/g, '.')}
+          <Calendar size={16} className="text-primary" /> {formatDate(date)}
         </h2>
         <div className="w-10" />
       </header>

@@ -12,6 +12,7 @@ export type Work = {
   name: string;
   coverImage: string; // 图片 URL 或 base64 或 emoji
   isEmojiCover: boolean;
+  isManualCover?: boolean; // 是否手动设置了封面
   createdAt: number;
   updatedAt: number;
 };

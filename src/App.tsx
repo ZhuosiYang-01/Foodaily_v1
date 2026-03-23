@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './store/AppContext';
 import { Toaster } from './components/ui/toaster';
 import { TooltipProvider } from './components/ui/tooltip';
+import SplashScreen from './components/SplashScreen';
 
 import HomePage from './pages/HomePage';
 import CategoriesPage from './pages/CategoriesPage';
@@ -22,11 +23,15 @@ import NotFound from './pages/NotFound';
 import BottomNav from './components/BottomNav';
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <AppProvider>
       <TooltipProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-gray-50 max-w-md mx-auto relative shadow-xl">
+          <div className="min-h-screen bg-background max-w-md mx-auto relative shadow-xl overflow-hidden">
+            {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+            
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/categories" element={<CategoriesPage />} />

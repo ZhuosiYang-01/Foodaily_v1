@@ -87,7 +87,7 @@ const CalendarPage = () => {
             <ChevronLeft size={20} />
           </button>
           <h3 className="text-lg font-bold text-gray-900 serif">
-            {year}年{month + 1}月
+            {year === new Date().getFullYear() ? `${month + 1}月` : `${year}.${month + 1}月`}
           </h3>
           <button onClick={nextMonth} className="p-2 text-gray-400 hover:text-primary transition-colors">
             <ChevronRight size={20} />

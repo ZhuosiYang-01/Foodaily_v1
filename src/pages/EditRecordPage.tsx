@@ -21,7 +21,10 @@ const EditRecordPage = () => {
 
   // State
   const [date, setDate] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [workName, setWorkName] = useState('');
   const [title, setTitle] = useState('');
+  const [hasManuallyEditedTitle, setHasManuallyEditedTitle] = useState(false);
   const [taste, setTaste] = useState('');
   const [evaluation, setEvaluation] = useState('');
   const [notes, setNotes] = useState('');
@@ -33,6 +36,8 @@ const EditRecordPage = () => {
   useEffect(() => {
     if (record) {
       setDate(record.date);
+      setCategoryId(work?.categoryId || '');
+      setWorkName(work?.name || '');
       setTitle(record.title);
       setTaste(record.taste || '');
       setEvaluation(record.evaluation);
@@ -41,7 +46,9 @@ const EditRecordPage = () => {
       setIsEmojiMain(record.isEmojiMain);
       setExtraImages(record.extraImages || []);
     }
-  }, [record]);
+  }, [record, work]);
+
+  const selectedCategory = useMemo(() => data.categories.find(c => c.id === categoryId), [categoryId, data.categories]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean) => {
     const file = e.target.files?.[0];
@@ -64,12 +71,15 @@ const EditRecordPage = () => {
     updateRecord(id, {
       date,
       title,
-      taste,
+      taste: selectedCategory?.supportsTaste ? taste : '',
       evaluation,
       notes,
       mainImage,
       isEmojiMain,
       extraImages,
+    }, {
+      name: workName,
+      categoryId: categoryId
     });
     navigate(`/record/${id}`);
   };
@@ -100,16 +110,50 @@ const EditRecordPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">记录名称 *</Label>
+            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">作品名称 *</Label>
             <Input 
-              placeholder="请输入名称" 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)}
+              placeholder="请输入作品名称" 
+              value={workName} 
+              onChange={(e) => {
+                const newWorkName = e.target.value;
+                setWorkName(newWorkName);
+                // 如果用户没有手动修改过记录名，或者记录名和旧的作品名一致，则同步更新
+                if (!hasManuallyEditedTitle) {
+                  setTitle(newWorkName);
+                }
+              }}
               className="rounded-xl border-gray-100"
             />
           </div>
 
-          {category?.supportsTaste && (
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">分类 *</Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger className="rounded-xl border-gray-100">
+                <SelectValue placeholder="请选择分类" />
+              </SelectTrigger>
+              <SelectContent>
+                {data.categories.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.icon} {c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">记录名称 *</Label>
+            <Input 
+              placeholder="请输入记录名称" 
+              value={title} 
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setHasManuallyEditedTitle(true);
+              }}
+              className="rounded-xl border-gray-100"
+            />
+          </div>
+
+          {selectedCategory?.supportsTaste && (
             <div className="space-y-2">
               <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">口味（选填）</Label>
               <Input 

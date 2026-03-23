@@ -80,13 +80,13 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="pb-24 pt-6 px-4 space-y-8 animate-in fade-in duration-500 relative min-h-screen">
+    <div className="pb-24 pt-6 px-4 space-y-8 animate-in fade-in duration-500 relative min-h-screen bg-background">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900 serif flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground serif flex items-center gap-2">
           <User size={24} className="text-primary" /> 我的 / 设置
         </h1>
-        <p className="text-sm text-gray-500 italic leading-relaxed">
+        <p className="text-sm text-muted-foreground italic leading-relaxed">
           管理你的美食橱窗和数据。
         </p>
       </header>
@@ -98,33 +98,33 @@ const SettingsPage = () => {
             {item.to ? (
               <Link 
                 to={item.to}
-                className="flex items-center justify-between p-5 bg-white rounded-3xl border border-gray-50 shadow-sm group hover:shadow-md transition-shadow"
+                className="flex items-center justify-between p-5 bg-card rounded-3xl border border-border/50 shadow-sm group hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
                     <item.icon size={20} />
                   </div>
-                  <span className="text-sm font-bold text-gray-900">{item.label}</span>
+                  <span className="text-sm font-bold text-foreground">{item.label}</span>
                 </div>
-                <ChevronLeft size={18} className="text-gray-300 rotate-180 group-hover:text-primary transition-colors" />
+                <ChevronLeft size={18} className="text-muted-foreground rotate-180 group-hover:text-primary transition-colors" />
               </Link>
             ) : (
               <div 
                 onClick={item.onClick || undefined}
-                className="flex items-center justify-between p-5 bg-white rounded-3xl border border-gray-50 shadow-sm group hover:shadow-md transition-shadow cursor-pointer"
+                className="flex items-center justify-between p-5 bg-card rounded-3xl border border-border/50 shadow-sm group hover:shadow-md transition-shadow cursor-pointer"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
                     <item.icon size={20} />
                   </div>
-                  <span className="text-sm font-bold text-gray-900">{item.label}</span>
+                  <span className="text-sm font-bold text-foreground">{item.label}</span>
                 </div>
                 {item.isFile ? (
                   <label className="absolute inset-0 cursor-pointer">
                     <input type="file" accept=".json" className="hidden" onChange={onFileChange} />
                   </label>
                 ) : null}
-                <ChevronLeft size={18} className="text-gray-300 rotate-180 group-hover:text-primary transition-colors" />
+                <ChevronLeft size={18} className="text-muted-foreground rotate-180 group-hover:text-primary transition-colors" />
               </div>
             )}
           </div>
@@ -140,15 +140,15 @@ const SettingsPage = () => {
       {/* Custom Modals & Toasts */}
       {showConfirmDemo && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">
             <div className="text-center space-y-2">
               <Check size={40} className="mx-auto text-purple-500 mb-2" />
-              <h3 className="text-lg font-bold text-gray-900">加载演示数据</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">加载演示数据将覆盖当前所有数据，确定继续吗？</p>
+              <h3 className="text-lg font-bold text-foreground">加载演示数据</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">加载演示数据将覆盖当前所有数据，确定继续吗？</p>
             </div>
             <div className="flex flex-col gap-3">
               <Button onClick={handleDemoConfirm} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest bg-purple-600 hover:bg-purple-700">确认加载</Button>
-              <Button variant="ghost" onClick={() => setShowConfirmDemo(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">取消</Button>
+              <Button variant="ghost" onClick={() => setShowConfirmDemo(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">取消</Button>
             </div>
           </div>
         </div>
@@ -156,15 +156,15 @@ const SettingsPage = () => {
 
       {showConfirmImport && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">
             <div className="text-center space-y-2">
               <Upload size={40} className="mx-auto text-orange-500 mb-2" />
-              <h3 className="text-lg font-bold text-gray-900">导入数据</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">导入数据将覆盖当前所有数据，确定继续吗？</p>
+              <h3 className="text-lg font-bold text-foreground">导入数据</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">导入数据将覆盖当前所有数据，确定继续吗？</p>
             </div>
             <div className="flex flex-col gap-3">
               <Button onClick={handleImportConfirm} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">确认导入</Button>
-              <Button variant="ghost" onClick={() => setShowConfirmImport(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">取消</Button>
+              <Button variant="ghost" onClick={() => setShowConfirmImport(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">取消</Button>
             </div>
           </div>
         </div>
@@ -172,15 +172,15 @@ const SettingsPage = () => {
 
       {showConfirmClear && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">
             <div className="text-center space-y-2">
               <AlertTriangle size={40} className="mx-auto text-red-500 mb-2" />
-              <h3 className="text-lg font-bold text-gray-900">清空数据</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">确定要清空所有数据吗？此操作不可撤销。</p>
+              <h3 className="text-lg font-bold text-foreground">清空数据</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">确定要清空所有数据吗？此操作不可撤销。</p>
             </div>
             <div className="flex flex-col gap-3">
               <Button variant="destructive" onClick={handleClearConfirm} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">确认清空</Button>
-              <Button variant="ghost" onClick={() => setShowConfirmClear(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">取消</Button>
+              <Button variant="ghost" onClick={() => setShowConfirmClear(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">取消</Button>
             </div>
           </div>
         </div>
