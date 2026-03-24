@@ -54,7 +54,7 @@ const HomePage = () => {
         {/* Header & Copy */}
         <header className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground serif">Foodaily</h1>
-          <p className="text-sm text-muted-foreground italic leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             今天是你记录下厨的第 {recordingDays} 天，{randomSuffix}
           </p>
         </header>
@@ -135,7 +135,7 @@ const HomePage = () => {
               </div>
             ) : (
               <div className="bg-card rounded-2xl p-8 text-center border border-dashed border-border/50">
-                <p className="text-xs text-muted-foreground italic">暂无记录，快去开启你的第一道美味吧 ✨</p>
+                <p className="text-xs text-muted-foreground">暂无记录，快去开启你的第一道美味吧 ✨</p>
               </div>
             )}
           </section>

@@ -26,7 +26,7 @@ const AboutPage = () => {
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold serif text-gray-900">Foodaily</h1>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">v1.0.0 (结构版)</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">V0 测试版</p>
           </div>
         </div>
 
@@ -36,14 +36,14 @@ const AboutPage = () => {
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-primary" /> 产品定位
             </h3>
-            <p className="text-sm text-gray-600 leading-relaxed italic">
+            <p className="text-sm text-gray-600 leading-relaxed">
               这是一款手机优先、以个人使用为核心的美食记录型 Web App，帮助用户把自己做过的菜品、烘焙和饮品整理成一个可持续积累、便于回看、也适合展示的个人下厨档案。
             </p>
           </section>
 
           <section className="space-y-3">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary" /> 核心理念
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" /> 核心功能
             </h3>
             <ul className="space-y-4">
               {[

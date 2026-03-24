@@ -75,8 +75,8 @@ const SettingsPage = () => {
     { onClick: () => setShowConfirmDemo(true), icon: Check, label: '加载演示数据', color: 'text-purple-500 bg-purple-50' },
     { onClick: handleExport, icon: Download, label: '导出数据', color: 'text-green-500 bg-green-50' },
     { onClick: null, icon: Upload, label: '导入数据', color: 'text-orange-500 bg-orange-50', isFile: true },
-    { onClick: () => setShowConfirmClear(true), icon: Trash2, label: '清空数据 / 删除全部数据', color: 'text-red-500 bg-red-50' },
-    { to: '/about', icon: Info, label: '关于产品 / 使用说明', color: 'text-gray-500 bg-gray-50' },
+    { onClick: () => setShowConfirmClear(true), icon: Trash2, label: '清空数据', color: 'text-red-500 bg-red-50' },
+    { to: '/about', icon: Info, label: '关于产品', color: 'text-gray-500 bg-gray-50' },
   ];
 
   return (
@@ -84,11 +84,8 @@ const SettingsPage = () => {
       {/* Header */}
       <header className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground serif flex items-center gap-2">
-          <User size={24} className="text-primary" /> 我的 / 设置
+          <User size={24} className="text-primary" /> 设置
         </h1>
-        <p className="text-sm text-muted-foreground italic leading-relaxed">
-          管理你的美食橱窗和数据。
-        </p>
       </header>
 
       {/* Settings List */}
@@ -133,8 +130,8 @@ const SettingsPage = () => {
 
       {/* Footer Info */}
       <footer className="text-center pt-8 space-y-1">
-        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Foodaily v1.0.0</p>
-        <p className="text-[10px] text-gray-400 italic">Made with ❤️ for food lovers</p>
+        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Foodaily V0 测试版</p>
+        <p className="text-[10px] text-gray-400">Made with ❤️ for food lovers</p>
       </footer>
 
       {/* Custom Modals & Toasts */}

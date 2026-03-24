@@ -6,11 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Work, RecordEntry } from '../types';
 import { formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 const WorkDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { data, deleteWork, addRecord } = useApp();
+  const { data, deleteWork, addRecord, restoreLastDeleted } = useApp();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const work = useMemo(() => data.works.find(w => w.id === id), [id, data.works]);
   const records = useMemo(() => 
@@ -127,7 +130,7 @@ const WorkDetailPage = () => {
                       <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
                         <StickyNote size={10} /> 备忘
                       </p>
-                      <p className="text-xs text-muted-foreground line-clamp-2 italic leading-relaxed">{record.notes}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{record.notes}</p>
                     </div>
                   )}
                 </div>
@@ -136,7 +139,7 @@ const WorkDetailPage = () => {
           </div>
         ) : (
           <div className="text-center py-12 bg-card rounded-3xl border border-dashed border-border/50">
-            <p className="text-xs text-muted-foreground italic">还没有制作记录哦</p>
+            <p className="text-xs text-muted-foreground">还没有制作记录哦</p>
           </div>
         )}
 

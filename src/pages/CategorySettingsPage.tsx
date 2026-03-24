@@ -24,15 +24,10 @@ const CategorySettingsPage = () => {
   const [showMoveOptions, setShowMoveOptions] = useState(false);
   const [targetCategoryId, setTargetCategoryId] = useState<string>('');
   
-  const [isPendingDelete, setIsPendingDelete] = useState<string | null>(null);
-  const [pendingForceDelete, setPendingForceDelete] = useState(false);
-
   const sortedCategories = useMemo(() => {
-    // 过滤掉正在等待删除的分类
     return [...data.categories]
-      .filter(c => c.id !== isPendingDelete)
       .sort((a, b) => a.order - b.order);
-  }, [data.categories, isPendingDelete]);
+  }, [data.categories]);
 
   const handleAdd = () => {
     if (!newName.trim()) return;
@@ -63,27 +58,9 @@ const CategorySettingsPage = () => {
   };
 
   const handleDelete = (id: string, force: boolean = false) => {
-    const cat = data.categories.find(c => c.id === id);
-    if (!cat) return;
-    
-    // 进入待删除状态
+    deleteCategory(id, force);
     setConfirmDeleteId(null);
     setShowMoveOptions(false);
-    setIsPendingDelete(id);
-    setPendingForceDelete(force);
-  };
-
-  const finalizeDelete = () => {
-    if (isPendingDelete) {
-      deleteCategory(isPendingDelete, pendingForceDelete);
-      setIsPendingDelete(null);
-      setPendingForceDelete(false);
-    }
-  };
-
-  const cancelDelete = () => {
-    setIsPendingDelete(null);
-    setPendingForceDelete(false);
   };
 
   const handleMoveAndDelete = (id: string) => {
@@ -182,31 +159,6 @@ const CategorySettingsPage = () => {
             </div>
           ))}
         </div>
-
-        {/* Undo Toast */}
-        {isPendingDelete && (
-          <div className="fixed bottom-24 left-4 right-4 bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom duration-300 z-50">
-            <div className="flex items-center gap-3">
-              <p className="text-xs font-bold">分类已删除</p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={cancelDelete}
-                variant="ghost" 
-                className="h-8 px-4 text-primary hover:text-primary/80 text-xs font-bold uppercase tracking-widest"
-              >
-                撤销
-              </Button>
-              <Button 
-                onClick={finalizeDelete}
-                variant="ghost" 
-                className="h-8 px-4 text-gray-400 hover:text-white text-xs font-bold uppercase tracking-widest"
-              >
-                完成
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Add New Category */}
         {isAdding ? (

@@ -13,6 +13,10 @@ interface AppContextType {
   deleteRecord: (id: string) => void;
   updateWork: (id: string, work: Partial<Work>) => void;
   deleteWork: (id: string) => void;
+  restoreLastDeleted: () => void;
+  finalizeDelete: () => void;
+  isUndoVisible: boolean;
+  undoType: 'record' | 'work' | 'category' | null;
   getMonthlyStats: (year: number, month: number) => MonthlyStats;
   search: (query: string) => { works: Work[]; records: RecordEntry[] };
   loadDemoData: () => void;
@@ -53,7 +57,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error('Failed to save data to localStorage', e);
+      if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+        alert('存储空间已满，无法保存更多照片。请尝试删除一些旧记录或减小照片大小。');
+      }
+    }
   }, [data]);
 
   useEffect(() => {
@@ -88,24 +99,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCategory = (id: string, force: boolean = false) => {
-    setData(prev => {
-      if (!force) {
-        return {
-          ...prev,
-          categories: prev.categories.filter(c => c.id !== id),
-        };
-      }
+    const categoryToDelete = data.categories.find(c => c.id === id);
+    if (!categoryToDelete) return;
 
-      // 强制删除模式：找出所有属于该分类的作品 ID
-      const workIdsToDelete = prev.works
-        .filter(w => w.categoryId === id)
-        .map(w => w.id);
+    let relatedWorks: Work[] = [];
+    let relatedRecords: RecordEntry[] = [];
+
+    if (force) {
+      relatedWorks = data.works.filter(w => w.categoryId === id);
+      const workIds = relatedWorks.map(w => w.id);
+      relatedRecords = data.records.filter(r => workIds.includes(r.workId));
+    }
+
+    setLastDeleted({ 
+      type: 'category', 
+      data: categoryToDelete, 
+      relatedWorks, 
+      relatedRecords 
+    });
+    setUndoType('category');
+    setIsUndoVisible(true);
+
+    setData(prev => {
+      const updatedCategories = prev.categories.filter(c => c.id !== id);
+      let updatedWorks = prev.works;
+      let updatedRecords = prev.records;
+
+      if (force) {
+        const workIds = relatedWorks.map(w => w.id);
+        updatedWorks = prev.works.filter(w => w.categoryId !== id);
+        updatedRecords = prev.records.filter(r => !workIds.includes(r.workId));
+      }
 
       return {
         ...prev,
-        categories: prev.categories.filter(c => c.id !== id),
-        works: prev.works.filter(w => w.categoryId !== id),
-        records: prev.records.filter(r => !workIdsToDelete.includes(r.workId)),
+        categories: updatedCategories,
+        works: updatedWorks,
+        records: updatedRecords
       };
     });
   };
@@ -128,62 +158,65 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     record: Omit<RecordEntry, 'id' | 'createdAt'>,
     workInfo: { name: string; categoryId: string; coverImage: string; isEmoji: boolean }
   ) => {
-    const recordId = crypto.randomUUID();
+    const recordId = typeof crypto.randomUUID === 'function' 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2) + Date.now().toString(36);
     const now = Date.now();
 
-    // 查找或创建作品
-    let workId = record.workId;
-    let updatedWorks = [...data.works];
+    setData(prev => {
+      let workId = record.workId;
+      let updatedWorks = [...prev.works];
 
-    if (!workId) {
-      // 尝试按名称匹配已有作品
-      const existingWork = data.works.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
-      if (existingWork) {
-        workId = existingWork.id;
-        // 如果不是手动设置的封面，更新为最新记录的封面
+      if (!workId) {
+        // 尝试按名称匹配已有作品
+        const existingWork = prev.works.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
+        if (existingWork) {
+          workId = existingWork.id;
+          updatedWorks = updatedWorks.map(w => w.id === workId ? { 
+            ...w, 
+            updatedAt: now,
+            coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
+            isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
+          } : w);
+        } else {
+          workId = typeof crypto.randomUUID === 'function' 
+            ? crypto.randomUUID() 
+            : Math.random().toString(36).substring(2) + Date.now().toString(36);
+          updatedWorks.push({
+            id: workId,
+            categoryId: workInfo.categoryId,
+            name: workInfo.name,
+            coverImage: workInfo.coverImage,
+            isEmojiCover: workInfo.isEmoji,
+            isManualCover: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      } else {
         updatedWorks = updatedWorks.map(w => w.id === workId ? { 
           ...w, 
           updatedAt: now,
           coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
           isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
         } : w);
-      } else {
-        workId = crypto.randomUUID();
-        updatedWorks.push({
-          id: workId,
-          categoryId: workInfo.categoryId,
-          name: workInfo.name,
-          coverImage: workInfo.coverImage,
-          isEmojiCover: workInfo.isEmoji,
-          isManualCover: false,
-          createdAt: now,
-          updatedAt: now,
-        });
       }
-    } else {
-      // 更新已有作品的 updatedAt
-      updatedWorks = updatedWorks.map(w => w.id === workId ? { 
-        ...w, 
-        updatedAt: now,
-        coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
-        isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
-      } : w);
-    }
 
-    const newRecord: RecordEntry = {
-      ...record,
-      id: recordId,
-      workId,
-      createdAt: now,
-    };
+      const newRecord: RecordEntry = {
+        ...record,
+        id: recordId,
+        workId,
+        createdAt: now,
+      };
 
-    setData(prev => ({
-      ...prev,
-      works: updatedWorks,
-      records: [newRecord, ...prev.records],
-    }));
-    localStorage.setItem('foodaily_initialized', 'true');
+      return {
+        ...prev,
+        works: updatedWorks,
+        records: [newRecord, ...prev.records],
+      };
+    });
 
+    localStorage.setItem(INITIALIZED_KEY, 'true');
     return recordId;
   };
 
@@ -278,27 +311,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const [lastDeleted, setLastDeleted] = useState<{ 
+    type: 'record' | 'work' | 'category'; 
+    data: any; 
+    relatedRecords?: RecordEntry[]; 
+    relatedWork?: Work;
+    relatedWorks?: Work[];
+  } | null>(null);
+  const [isUndoVisible, setIsUndoVisible] = useState(false);
+  const [undoType, setUndoType] = useState<'record' | 'work' | 'category' | null>(null);
+
   const deleteRecord = (id: string) => {
+    const recordToDelete = data.records.find(r => r.id === id);
+    if (!recordToDelete) return;
+
+    const workId = recordToDelete.workId;
+    const work = data.works.find(w => w.id === workId);
+    
+    // 检查是否是该作品的最后一条记录
+    const remainingRecordsForWork = data.records.filter(r => r.workId === workId && r.id !== id);
+    const isLastRecord = remainingRecordsForWork.length === 0;
+
+    if (isLastRecord) {
+      setLastDeleted({ type: 'record', data: recordToDelete, relatedWork: work });
+    } else {
+      setLastDeleted({ type: 'record', data: recordToDelete });
+    }
+
+    setUndoType('record');
+    setIsUndoVisible(true);
+
     setData(prev => {
-      const recordToDelete = prev.records.find(r => r.id === id);
       const updatedRecords = prev.records.filter(r => r.id !== id);
       let updatedWorks = prev.works;
 
-      if (recordToDelete) {
-        const work = prev.works.find(w => w.id === recordToDelete.workId);
-        if (work && !work.isManualCover) {
-          // 找出该作品剩余的记录
-          const remainingRecords = updatedRecords.filter(r => r.workId === work.id);
-          const latestRecord = [...remainingRecords].sort((a, b) => b.date.localeCompare(a.date))[0];
-          
+      if (isLastRecord) {
+        updatedWorks = prev.works.filter(w => w.id !== workId);
+      } else {
+        // 如果还有剩余记录，更新封面（如果需要）
+        const currentWork = prev.works.find(w => w.id === workId);
+        if (currentWork && !currentWork.isManualCover) {
+          const latestRecord = [...remainingRecordsForWork].sort((a, b) => b.date.localeCompare(a.date))[0];
           if (latestRecord) {
-            updatedWorks = prev.works.map(w => w.id === work.id ? {
+            updatedWorks = prev.works.map(w => w.id === workId ? {
               ...w,
               coverImage: latestRecord.mainImage,
               isEmojiCover: latestRecord.isEmojiMain
             } : w);
           }
-          // 如果没有剩余记录，保持原样或可以考虑重置，但通常保持最后一张图比较好
         }
       }
 
@@ -329,11 +389,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteWork = (id: string) => {
+    const workToDelete = data.works.find(w => w.id === id);
+    if (!workToDelete) return;
+
+    const relatedRecords = data.records.filter(r => r.workId === id);
+    
+    setLastDeleted({ type: 'work', data: workToDelete, relatedRecords });
+    setUndoType('work');
+    setIsUndoVisible(true);
+
     setData(prev => ({
       ...prev,
       works: prev.works.filter(w => w.id !== id),
       records: prev.records.filter(r => r.workId !== id),
     }));
+  };
+
+  const restoreLastDeleted = () => {
+    if (!lastDeleted) return;
+
+    setData(prev => {
+      if (lastDeleted.type === 'record') {
+        const restoredRecord = lastDeleted.data as RecordEntry;
+        const relatedWork = lastDeleted.relatedWork as Work | undefined;
+        
+        let newWorks = prev.works;
+        if (relatedWork && !prev.works.some(w => w.id === relatedWork.id)) {
+          newWorks = [...prev.works, relatedWork];
+        }
+
+        // 确保作品还存在（要么本来就在，要么刚才恢复了）
+        const workExists = newWorks.some(w => w.id === restoredRecord.workId);
+        if (!workExists) return prev;
+
+        return {
+          ...prev,
+          works: newWorks,
+          records: [restoredRecord, ...prev.records]
+        };
+      } else if (lastDeleted.type === 'work') {
+        const restoredWork = lastDeleted.data as Work;
+        const restoredRecords = lastDeleted.relatedRecords || [];
+        
+        return {
+          ...prev,
+          works: [...prev.works, restoredWork],
+          records: [...prev.records, ...restoredRecords]
+        };
+      } else if (lastDeleted.type === 'category') {
+        const restoredCategory = lastDeleted.data as Category;
+        const restoredWorks = lastDeleted.relatedWorks || [];
+        const restoredRecords = lastDeleted.relatedRecords || [];
+
+        return {
+          ...prev,
+          categories: [...prev.categories, restoredCategory],
+          works: [...prev.works, ...restoredWorks],
+          records: [...prev.records, ...restoredRecords]
+        };
+      }
+      return prev;
+    });
+
+    setLastDeleted(null);
+    setIsUndoVisible(false);
+    setUndoType(null);
+  };
+
+  const finalizeDelete = () => {
+    setLastDeleted(null);
+    setIsUndoVisible(false);
+    setUndoType(null);
   };
 
   const getMonthlyStats = (year: number, month: number): MonthlyStats => {
@@ -373,7 +499,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (mode === 'replace') {
         setData(imported);
         if (imported.works.length > 0 || imported.records.length > 0) {
-          localStorage.setItem('foodaily_initialized', 'true');
+          localStorage.setItem(INITIALIZED_KEY, 'true');
         }
       } else {
         // 简单合并逻辑：合并分类、作品和记录，去重
@@ -382,7 +508,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           works: [...prev.works, ...imported.works.filter(iw => !prev.works.find(pw => pw.id === iw.id))],
           records: [...prev.records, ...imported.records.filter(ir => !prev.records.find(pr => pr.id === ir.id))],
         }));
-        localStorage.setItem('foodaily_initialized', 'true');
+        localStorage.setItem(INITIALIZED_KEY, 'true');
       }
     } catch (e) {
       console.error('Import error:', e);
@@ -401,7 +527,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       works: INITIAL_WORKS,
       records: INITIAL_RECORDS
     });
-    localStorage.setItem('foodaily_initialized', 'true');
+    localStorage.setItem(INITIALIZED_KEY, 'true');
   };
 
   return (
@@ -416,6 +542,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteRecord,
       updateWork,
       deleteWork,
+      restoreLastDeleted,
+      finalizeDelete,
+      isUndoVisible,
+      undoType,
       moveWorksToCategory,
       getMonthlyStats,
       search,

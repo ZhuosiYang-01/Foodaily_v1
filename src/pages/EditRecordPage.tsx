@@ -16,8 +16,7 @@ const EditRecordPage = () => {
   const record = useMemo(() => data.records.find(r => r.id === id), [id, data.records]);
   const work = useMemo(() => data.works.find(w => w.id === record?.workId), [record, data.works]);
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
-  const cameraInputRef = React.useRef<HTMLInputElement>(null);
-  const galleryInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // State
   const [date, setDate] = useState('');
@@ -31,7 +30,7 @@ const EditRecordPage = () => {
   const [mainImage, setMainImage] = useState('');
   const [isEmojiMain, setIsEmojiMain] = useState(false);
   const [extraImages, setExtraImages] = useState<string[]>([]);
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (record) {
@@ -55,33 +54,75 @@ const EditRecordPage = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (isMain) {
-          setMainImage(reader.result as string);
-          setIsEmojiMain(false);
-        } else {
-          setExtraImages(prev => [...prev, reader.result as string].slice(0, 2));
-        }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension 1200px
+          const MAX_DIM = 1200;
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height *= MAX_DIM / width;
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width *= MAX_DIM / height;
+              height = MAX_DIM;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to 0.7 quality
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          if (isMain) {
+            setMainImage(compressedDataUrl);
+            setIsEmojiMain(false);
+          } else {
+            setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
+          }
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
+    e.target.value = '';
   };
 
   const handleSave = () => {
-    if (!id) return;
-    updateRecord(id, {
-      date,
-      title,
-      taste: selectedCategory?.supportsTaste ? taste : '',
-      evaluation,
-      notes,
-      mainImage,
-      isEmojiMain,
-      extraImages,
-    }, {
-      name: workName,
-      categoryId: categoryId
-    });
-    navigate(`/record/${id}`);
+    if (!id || isSaving) return;
+    setIsSaving(true);
+
+    try {
+      updateRecord(id, {
+        date,
+        title,
+        taste: selectedCategory?.supportsTaste ? taste : '',
+        evaluation,
+        notes,
+        mainImage,
+        isEmojiMain,
+        extraImages,
+      }, {
+        name: workName,
+        categoryId: categoryId
+      });
+      
+      setTimeout(() => {
+        navigate(`/record/${id}`, { replace: true });
+      }, 50);
+    } catch (error) {
+      console.error('Update failed:', error);
+      setIsSaving(false);
+      alert('保存失败，请重试');
+    }
   };
 
   if (!record) return null;
@@ -157,7 +198,7 @@ const EditRecordPage = () => {
             <div className="space-y-2">
               <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">口味（选填）</Label>
               <Input 
-                placeholder="例如：橙子 / 巧克力" 
+                placeholder="例如：橙子、巧克力" 
                 value={taste} 
                 onChange={(e) => setTaste(e.target.value)}
                 className="rounded-xl border-gray-100"
@@ -172,35 +213,18 @@ const EditRecordPage = () => {
                 <button
                   type="button"
                   className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-white"
-                  onClick={() => setShowPhotoOptions(true)}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera size={32} className="text-gray-300 group-hover:text-primary transition-colors" />
                   <span className="text-[10px] font-bold text-gray-400 uppercase">上传照片</span>
                 </button>
-                {showPhotoOptions && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <button 
-                      onClick={() => { cameraInputRef.current?.click(); setShowPhotoOptions(false); }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-colors"
-                    >
-                      拍照上传
-                    </button>
-                    <button 
-                      onClick={() => { galleryInputRef.current?.click(); setShowPhotoOptions(false); }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-colors"
-                    >
-                      从相册中选择
-                    </button>
-                    <button 
-                      onClick={() => setShowPhotoOptions(false)}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-red-400 uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-t border-gray-50 mt-1"
-                    >
-                      取消
-                    </button>
-                  </div>
-                )}
-                <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={(e) => handleImageUpload(e, true)} />
-                <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={(e) => handleImageUpload(e, true)} />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={(e) => handleImageUpload(e, true)} 
+                />
               </div>
               
               <button 

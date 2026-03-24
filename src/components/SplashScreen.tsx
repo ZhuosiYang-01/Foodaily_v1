@@ -9,6 +9,14 @@ interface SplashScreenProps {
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [isVisible, setIsVisible] = useState(true);
 
+  // 自动关闭兜底：如果用户不知道怎么上滑，5秒后自动关闭
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleDragEnd = (_: any, info: any) => {
     // If dragged up more than 100px or velocity is high enough
     if (info.offset.y < -100 || info.velocity.y < -500) {
@@ -56,9 +64,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground">
                 Your Daily Cooking Gallery
               </p>
-              <p className="text-[10px] italic text-muted-foreground/60">
-                定格，属于你的三餐四季
-              </p>
             </motion.div>
           </div>
 
@@ -74,9 +79,6 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
             >
               <ChevronUp size={24} className="text-primary/60" />
             </motion.div>
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-primary/40">
-              上滑开启
-            </p>
           </motion.div>
         </motion.div>
       )}

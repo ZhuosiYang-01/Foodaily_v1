@@ -9,7 +9,7 @@ const BottomNav = () => {
     { to: '/categories', icon: LayoutGrid, label: '分类' },
     { to: '/new-record', icon: PlusCircle, label: '新增', isMain: true },
     { to: '/calendar', icon: Calendar, label: '日历' },
-    { to: '/settings', icon: User, label: '我的' },
+    { to: '/settings', icon: User, label: '设置' },
   ];
 
   return (

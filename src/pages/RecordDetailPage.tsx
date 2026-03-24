@@ -5,19 +5,52 @@ import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 const RecordDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { data, deleteRecord } = useApp();
+  const { data, deleteRecord, restoreLastDeleted } = useApp();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const record = useMemo(() => data.records.find(r => r.id === id), [id, data.records]);
   const work = useMemo(() => data.works.find(w => w.id === record?.workId), [record, data.works]);
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Give it a tiny bit of time to settle if it's a new record
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [id]);
+
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
-  if (!record) return <div className="p-8 text-center text-gray-400">记录不存在</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">正在加载记录...</p>
+      </div>
+    );
+  }
+
+  if (!record) return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center space-y-4">
+      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+        <RotateCcw size={32} />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-bold text-gray-900">记录不存在</p>
+        <p className="text-xs text-gray-400">该记录可能已被删除或尚未同步</p>
+      </div>
+      <Button variant="ghost" onClick={() => navigate('/')} className="text-xs font-bold uppercase tracking-widest text-primary">返回首页</Button>
+    </div>
+  );
 
   const handleDelete = () => {
     deleteRecord(record.id);
@@ -83,7 +116,7 @@ const RecordDetailPage = () => {
               <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                 <Star size={14} className="text-primary" /> 评价
               </h3>
-              <p className="text-sm text-foreground/80 leading-relaxed bg-card p-4 rounded-2xl border border-border/50 italic">
+              <p className="text-sm text-foreground/80 leading-relaxed bg-card p-4 rounded-2xl border border-border/50">
                 {record.evaluation}
               </p>
             </div>

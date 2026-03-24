@@ -75,14 +75,14 @@ const CategoriesPage = () => {
                   </div>
                 ))}
                 {cat.previewWorks.length < 3 && Array.from({ length: 3 - cat.previewWorks.length }).map((_, i) => (
-                  <div key={i} className="flex-1 aspect-square rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground/30 italic text-[10px]">
+                  <div key={i} className="flex-1 aspect-square rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground/30 text-[10px]">
                     空
                   </div>
                 ))}
               </div>
             ) : (
               <div className="py-8 text-center bg-background rounded-2xl border border-dashed border-border/50">
-                <p className="text-[10px] text-muted-foreground italic">暂无作品</p>
+                <p className="text-[10px] text-muted-foreground">暂无作品</p>
               </div>
             )}
           </Link>

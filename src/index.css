@@ -88,12 +88,13 @@
 @layer base {
   * {
     @apply border-border;
+    font-style: normal !important;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   .serif {
-    @apply font-serif;
+    @apply font-sans;
   }
 }

@@ -16,8 +16,7 @@ const NewRecordPage = () => {
   const [searchParams] = useSearchParams();
   const initialWorkId = searchParams.get('workId');
   const [step, setStep] = useState(1);
-  const cameraInputRef = React.useRef<HTMLInputElement>(null);
-  const galleryInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Step 1 State
   const [workName, setWorkName] = useState('');
@@ -26,7 +25,6 @@ const NewRecordPage = () => {
   const [mainImage, setMainImage] = useState('');
   const [isEmojiMain, setIsEmojiMain] = useState(false);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialWorkId);
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   // Initialize from workId if provided
   useEffect(() => {
@@ -47,6 +45,7 @@ const NewRecordPage = () => {
   const [evaluation, setEvaluation] = useState('');
   const [notes, setNotes] = useState('');
   const [extraImages, setExtraImages] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Derived State
   const selectedCategory = useMemo(() => data.categories.find(c => c.id === categoryId), [categoryId, data.categories]);
@@ -72,38 +71,91 @@ const NewRecordPage = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (isMain) {
-          setMainImage(reader.result as string);
-          setIsEmojiMain(false);
-        } else {
-          setExtraImages(prev => [...prev, reader.result as string].slice(0, 2));
-        }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension 1200px
+          const MAX_DIM = 1200;
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height *= MAX_DIM / width;
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width *= MAX_DIM / height;
+              height = MAX_DIM;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to 0.7 quality
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          if (isMain) {
+            setMainImage(compressedDataUrl);
+            setIsEmojiMain(false);
+          } else {
+            setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
+          }
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
+    // Reset input value so the same file can be selected again
+    e.target.value = '';
   };
 
-  const handleSave = () => {
-    const recordId = addRecord(
-      {
-        workId: selectedWorkId || '',
-        date,
-        title: recordTitle || workName,
-        taste,
-        evaluation,
-        notes,
-        mainImage,
-        isEmojiMain,
-        extraImages,
-      },
-      {
-        name: workName,
-        categoryId,
-        coverImage: mainImage,
-        isEmoji: isEmojiMain,
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    
+    try {
+      console.log('Attempting to save record...');
+      const recordId = addRecord(
+        {
+          workId: selectedWorkId || '',
+          date,
+          title: recordTitle || workName || '未命名记录',
+          taste,
+          evaluation,
+          notes,
+          mainImage,
+          isEmojiMain,
+          extraImages,
+        },
+        {
+          name: workName || '未命名作品',
+          categoryId,
+          coverImage: mainImage,
+          isEmoji: isEmojiMain,
+        }
+      );
+      
+      if (!recordId) {
+        throw new Error('Failed to generate record ID');
       }
-    );
-    navigate(`/record/${recordId}`);
+
+      console.log('Record saved with ID:', recordId);
+      
+      // Use a slightly longer timeout and check if navigation works
+      setTimeout(() => {
+        navigate(`/record/${recordId}`, { replace: true });
+      }, 100);
+    } catch (error) {
+      console.error('Save failed:', error);
+      setIsSaving(false);
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      alert(`保存失败: ${errorMessage}\n请检查存储空间是否充足。`);
+    }
   };
 
   const isStep1Valid = workName && categoryId && date && mainImage;
@@ -116,7 +168,7 @@ const NewRecordPage = () => {
           <ChevronLeft size={24} />
         </button>
         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
-          新增记录
+          {isSaving ? '正在保存...' : '新增记录'}
         </h2>
         <div className="w-10" />
       </header>
@@ -192,35 +244,18 @@ const NewRecordPage = () => {
                     <button
                       type="button"
                       className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-white"
-                      onClick={() => setShowPhotoOptions(true)}
+                      onClick={() => fileInputRef.current?.click()}
                     >
                       <Camera size={32} className="text-gray-300 group-hover:text-primary transition-colors" />
                       <span className="text-[10px] font-bold text-gray-400 uppercase">上传照片</span>
                     </button>
-                    {showPhotoOptions && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <button 
-                          onClick={() => { cameraInputRef.current?.click(); setShowPhotoOptions(false); }}
-                          className="w-full text-left px-4 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-colors"
-                        >
-                          拍照上传
-                        </button>
-                        <button 
-                          onClick={() => { galleryInputRef.current?.click(); setShowPhotoOptions(false); }}
-                          className="w-full text-left px-4 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-colors"
-                        >
-                          从相册中选择
-                        </button>
-                        <button 
-                          onClick={() => setShowPhotoOptions(false)}
-                          className="w-full text-left px-4 py-3 text-[10px] font-bold text-red-400 uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-t border-gray-50 mt-1"
-                        >
-                          取消
-                        </button>
-                      </div>
-                    )}
-                    <input type="file" accept="image/*" capture="environment" className="hidden" ref={cameraInputRef} onChange={(e) => handleImageUpload(e, true)} />
-                    <input type="file" accept="image/*" className="hidden" ref={galleryInputRef} onChange={(e) => handleImageUpload(e, true)} />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      onChange={(e) => handleImageUpload(e, true)} 
+                    />
                   </div>
                   
                   <button 
@@ -274,7 +309,7 @@ const NewRecordPage = () => {
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">口味（选填）</Label>
                   <Input 
-                    placeholder="例如：橙子 / 巧克力" 
+                    placeholder="例如：橙子、巧克力" 
                     value={taste} 
                     onChange={(e) => setTaste(e.target.value)}
                     className="rounded-xl border-gray-100"

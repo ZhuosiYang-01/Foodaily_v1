@@ -21,6 +21,7 @@ import CategorySettingsPage from './pages/CategorySettingsPage';
 import AboutPage from './pages/AboutPage';
 import NotFound from './pages/NotFound';
 import BottomNav from './components/BottomNav';
+import UndoBar from './components/UndoBar';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -49,7 +50,12 @@ function App() {
               <Route path="/about" element={<AboutPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <BottomNav />
+            {!showSplash && (
+              <>
+                <BottomNav />
+                <UndoBar />
+              </>
+            )}
           </div>
           <Toaster />
         </BrowserRouter>
