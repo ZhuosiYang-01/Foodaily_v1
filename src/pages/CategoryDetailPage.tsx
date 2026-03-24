@@ -47,13 +47,13 @@ const CategoryDetailPage = () => {
   if (!category) return null;
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-in slide-in-from-right duration-300">
+    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-gray-50 sticky top-0 bg-white z-10">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-gray-900">
+      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
           <span>{category.icon}</span> {category.name}
         </h2>
         <div className="w-10" />
@@ -62,11 +62,11 @@ const CategoryDetailPage = () => {
       <div className="p-6 space-y-6">
         {/* Sort Controls */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">
             <ArrowUpDown size={14} /> 排序方式
           </div>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortType)}>
-            <SelectTrigger className="w-[140px] h-9 rounded-full bg-gray-50 border-none text-xs font-bold">
+            <SelectTrigger className="w-[140px] h-9 rounded-full bg-card border-border text-xs font-bold">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -84,9 +84,9 @@ const CategoryDetailPage = () => {
               <Link 
                 key={work.id} 
                 to={`/work/${work.id}`}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col"
+                className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col"
               >
-                <div className="aspect-square bg-gray-50 relative overflow-hidden">
+                <div className="aspect-square bg-muted/30 relative overflow-hidden">
                   {work.isEmojiCover ? (
                     <div className="w-full h-full flex items-center justify-center text-4xl">{work.coverImage}</div>
                   ) : (
@@ -94,8 +94,8 @@ const CategoryDetailPage = () => {
                   )}
                 </div>
                 <div className="p-2 space-y-0.5 text-center">
-                  <h4 className="text-[10px] font-bold text-gray-900 truncate">{work.name}</h4>
-                  <p className="text-[8px] text-gray-400 font-bold">
+                  <h4 className="text-[10px] font-bold text-foreground truncate">{work.name}</h4>
+                  <p className="text-[8px] text-muted-foreground font-bold">
                     {sortBy === 'recent' && (work.recentDate ? formatDate(work.recentDate) : '暂无')}
                     {sortBy === 'most_frequent' && `已做 ${work.recordCount} 次`}
                     {sortBy === 'first_time' && (work.firstDate ? formatDate(work.firstDate) : '暂无')}
@@ -105,8 +105,8 @@ const CategoryDetailPage = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-24 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-            <p className="text-xs text-gray-400 italic">该分类暂无作品 ✨</p>
+          <div className="text-center py-24 bg-muted/20 rounded-3xl border border-dashed border-border">
+            <p className="text-xs text-muted-foreground italic">该分类暂无作品 ✨</p>
           </div>
         )}
       </div>

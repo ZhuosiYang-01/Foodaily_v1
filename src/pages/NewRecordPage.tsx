@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import EmojiPicker from '../components/EmojiPicker';
 
 const NewRecordPage = () => {
   const { data, addRecord } = useApp();
@@ -25,6 +26,7 @@ const NewRecordPage = () => {
   const [mainImage, setMainImage] = useState('');
   const [isEmojiMain, setIsEmojiMain] = useState(false);
   const [selectedWorkId, setSelectedWorkId] = useState<string | null>(initialWorkId);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
 
   // Initialize from workId if provided
   useEffect(() => {
@@ -33,8 +35,7 @@ const NewRecordPage = () => {
       if (work) {
         setWorkName(work.name);
         setCategoryId(work.categoryId);
-        setMainImage(work.coverImage);
-        setIsEmojiMain(work.isEmojiCover);
+        // Do not pre-fill mainImage and isEmojiMain to allow user to upload new photos
       }
     }
   }, [initialWorkId, data.works]);
@@ -161,13 +162,13 @@ const NewRecordPage = () => {
   const isStep1Valid = workName && categoryId && date && mainImage;
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-in slide-in-from-right duration-300">
+    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-gray-50 sticky top-0 bg-white z-10">
-        <button onClick={() => step === 1 ? navigate(-1) : setStep(1)} className="p-2 -ml-2 text-gray-400 hover:text-gray-900">
+      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <button onClick={() => step === 1 ? navigate(-1) : setStep(1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest">
           {isSaving ? '正在保存...' : '新增记录'}
         </h2>
         <div className="w-10" />
@@ -179,7 +180,7 @@ const NewRecordPage = () => {
             {/* Step 1: Basic Info */}
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">作品名称 *</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">作品名称 *</Label>
                 <Input 
                   placeholder="请输入名称" 
                   value={workName} 
@@ -187,13 +188,13 @@ const NewRecordPage = () => {
                     setWorkName(e.target.value);
                     setSelectedWorkId(null);
                   }}
-                  className="rounded-xl border-gray-100 focus:ring-primary"
+                  className="rounded-xl border-border bg-card focus:ring-primary"
                 />
                 
                 {/* Matching Works */}
                 {matchingWorks.length > 0 && !selectedWorkId && (
-                  <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-2 animate-in fade-in zoom-in-95">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase">可能已有作品：</p>
+                  <div className="mt-2 p-3 bg-muted/30 rounded-xl border border-border space-y-2 animate-in fade-in zoom-in-95">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase">可能已有作品：</p>
                     <div className="flex flex-wrap gap-2">
                       {matchingWorks.map(w => (
                         <button
@@ -203,7 +204,7 @@ const NewRecordPage = () => {
                             setSelectedWorkId(w.id);
                             setCategoryId(w.categoryId);
                           }}
-                          className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
+                          className="text-xs bg-card border border-border px-3 py-1.5 rounded-full hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5"
                         >
                           <Check size={12} /> {w.name}
                         </button>
@@ -214,9 +215,9 @@ const NewRecordPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">分类 *</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">分类 *</Label>
                 <Select value={categoryId} onValueChange={setCategoryId} disabled={!!selectedWorkId}>
-                  <SelectTrigger className="rounded-xl border-gray-100">
+                  <SelectTrigger className="rounded-xl border-border bg-card">
                     <SelectValue placeholder="请选择分类" />
                   </SelectTrigger>
                   <SelectContent>
@@ -228,26 +229,26 @@ const NewRecordPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">制作日期 *</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">制作日期 *</Label>
                 <Input 
                   type="date" 
                   value={date} 
                   onChange={(e) => setDate(e.target.value)}
-                  className="rounded-xl border-gray-100"
+                  className="rounded-xl border-border bg-card"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">封面图 *</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">封面图 *</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative">
                     <button
                       type="button"
-                      className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-white"
+                      className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      <Camera size={32} className="text-gray-300 group-hover:text-primary transition-colors" />
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">上传照片</span>
+                      <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
                     </button>
                     <input 
                       type="file" 
@@ -259,24 +260,28 @@ const NewRecordPage = () => {
                   </div>
                   
                   <button 
-                    onClick={() => {
-                      const emoji = prompt('请输入一个 Emoji');
-                      if (emoji) {
-                        setMainImage(emoji);
-                        setIsEmojiMain(true);
-                      }
-                    }}
-                    className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                    onClick={() => setIsEmojiPickerOpen(true)}
+                    className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
                   >
-                    <Smile size={32} className="text-gray-300 group-hover:text-primary transition-colors mb-2" />
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">选择 Emoji</span>
+                    <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
                   </button>
                 </div>
+
+                <EmojiPicker
+                  isOpen={isEmojiPickerOpen}
+                  onClose={() => setIsEmojiPickerOpen(false)}
+                  onSelect={(emoji) => {
+                    setMainImage(emoji);
+                    setIsEmojiMain(true);
+                  }}
+                  currentEmoji={isEmojiMain ? mainImage : undefined}
+                />
                 
                 {mainImage && (
-                  <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-gray-50">
+                  <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
                     {isEmojiMain ? (
-                      <div className="w-full h-full flex items-center justify-center text-7xl bg-gray-50">{mainImage}</div>
+                      <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{mainImage}</div>
                     ) : (
                       <img src={mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     )}
@@ -307,51 +312,51 @@ const NewRecordPage = () => {
             <div className="space-y-6">
               {selectedCategory?.supportsTaste && (
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">口味（选填）</Label>
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">口味（选填）</Label>
                   <Input 
                     placeholder="例如：橙子、巧克力" 
                     value={taste} 
                     onChange={(e) => setTaste(e.target.value)}
-                    className="rounded-xl border-gray-100"
+                    className="rounded-xl border-border bg-card"
                   />
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">记录名称（选填）</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">记录名称（选填）</Label>
                 <Input 
                   placeholder="默认：作品名称，可自行修改" 
                   value={recordTitle} 
                   onChange={(e) => setRecordTitle(e.target.value)}
-                  className="rounded-xl border-gray-100"
+                  className="rounded-xl border-border bg-card"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">评价（选填）</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">评价（选填）</Label>
                 <Textarea 
                   placeholder="这次状态比上次更稳……" 
                   value={evaluation} 
                   onChange={(e) => setEvaluation(e.target.value)}
-                  className="rounded-xl border-gray-100 min-h-[100px]"
+                  className="rounded-xl border-border bg-card min-h-[100px]"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">备忘（选填）</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">备忘（选填）</Label>
                 <Textarea 
                   placeholder="下次少放一点糖……" 
                   value={notes} 
                   onChange={(e) => setNotes(e.target.value)}
-                  className="rounded-xl border-gray-100 min-h-[100px]"
+                  className="rounded-xl border-border bg-card min-h-[100px]"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">其他照片 (最多 2 张)</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">其他照片 (最多 2 张)</Label>
                 <div className="grid grid-cols-3 gap-3">
                   {extraImages.map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-gray-50">
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-border">
                       <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       <button 
                         onClick={() => setExtraImages(prev => prev.filter((_, i) => i !== idx))}
@@ -362,9 +367,9 @@ const NewRecordPage = () => {
                     </div>
                   ))}
                   {extraImages.length < 2 && (
-                    <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
+                    <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group bg-card">
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, false)} />
-                      <PlusCircle size={24} className="text-gray-300 group-hover:text-primary transition-colors" />
+                      <PlusCircle size={24} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
                     </label>
                   )}
                 </div>

@@ -28,7 +28,7 @@ const CategoriesPage = () => {
     <div className="pb-24 pt-6 px-4 space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 serif flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <LayoutGrid size={24} className="text-primary" /> 分类
         </h1>
         <button 

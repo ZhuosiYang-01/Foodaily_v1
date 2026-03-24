@@ -8,6 +8,7 @@ import { Work, RecordEntry } from '../types';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import ImageViewer from '../components/ImageViewer';
 
 const WorkDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,12 @@ const WorkDetailPage = () => {
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+
+  const coverImages = useMemo(() => {
+    if (!work || work.isEmojiCover || !work.coverImage) return [];
+    return [work.coverImage];
+  }, [work]);
 
   const handleDeleteWork = () => {
     if (!work) return;
@@ -66,8 +73,9 @@ const WorkDetailPage = () => {
           <img 
             src={work.coverImage} 
             alt={work.name} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover cursor-pointer"
             referrerPolicy="no-referrer"
+            onClick={() => setViewerOpen(true)}
           />
         )}
         
@@ -155,19 +163,25 @@ const WorkDetailPage = () => {
         {/* Custom Delete Confirmation Modal */}
         {showConfirmDelete && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-[280px] space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-[280px] space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
               <div className="text-center space-y-2">
-                <Trash2 size={40} className="mx-auto text-red-500 mb-2" />
-                <h3 className="text-lg font-bold text-gray-900">删除作品</h3>
-                <p className="text-xs text-gray-400 leading-relaxed">确认删除吗？</p>
+                <Trash2 size={40} className="mx-auto text-destructive mb-2" />
+                <h3 className="text-lg font-bold text-foreground">删除作品</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">确认删除吗？</p>
               </div>
               <div className="flex flex-col gap-3">
                 <Button variant="destructive" onClick={handleDeleteWork} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">确认删除</Button>
-                <Button variant="ghost" onClick={() => setShowConfirmDelete(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">返回</Button>
+                <Button variant="ghost" onClick={() => setShowConfirmDelete(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">返回</Button>
               </div>
             </div>
           </div>
         )}
+        {/* ImageViewer */}
+        <ImageViewer 
+          images={coverImages} 
+          isOpen={viewerOpen} 
+          onClose={() => setViewerOpen(false)} 
+        />
       </div>
     </div>
   );

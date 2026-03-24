@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import EmojiPicker from '../components/EmojiPicker';
 
 const EditWorkPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ const EditWorkPage = () => {
   const [categoryId, setCategoryId] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [isEmojiCover, setIsEmojiCover] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   useEffect(() => {
@@ -59,32 +61,32 @@ const EditWorkPage = () => {
   if (!work) return null;
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-in slide-in-from-right duration-300">
+    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-gray-50 sticky top-0 bg-white z-10">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-gray-900">
+      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">编辑作品</h2>
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest">编辑作品</h2>
         <div className="w-10" />
       </header>
 
       <div className="p-6 space-y-8">
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">作品名称 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">作品名称 *</Label>
             <Input 
               placeholder="请输入名称" 
               value={name} 
               onChange={(e) => setName(e.target.value)}
-              className="rounded-xl border-gray-100"
+              className="rounded-xl border-border bg-card"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">分类 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">分类 *</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="rounded-xl border-gray-100">
+              <SelectTrigger className="rounded-xl border-border bg-card">
                 <SelectValue placeholder="请选择分类" />
               </SelectTrigger>
               <SelectContent>
@@ -96,34 +98,34 @@ const EditWorkPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">封面图 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">封面图 *</Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="relative">
                 <button
                   type="button"
-                  className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-white"
+                  className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
                   onClick={() => setShowPhotoOptions(true)}
                 >
-                  <Camera size={32} className="text-gray-300 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-bold text-gray-400 uppercase">上传照片</span>
+                  <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
                 </button>
                 {showPhotoOptions && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-2xl shadow-xl border border-border p-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
                     <button 
                       onClick={() => { cameraInputRef.current?.click(); setShowPhotoOptions(false); }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-colors"
+                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-foreground uppercase tracking-widest hover:bg-muted/50 rounded-xl transition-colors"
                     >
                       拍照上传
                     </button>
                     <button 
                       onClick={() => { galleryInputRef.current?.click(); setShowPhotoOptions(false); }}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-gray-600 uppercase tracking-widest hover:bg-gray-50 rounded-xl transition-colors"
+                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-foreground uppercase tracking-widest hover:bg-muted/50 rounded-xl transition-colors"
                     >
                       从相册中选择
                     </button>
                     <button 
                       onClick={() => setShowPhotoOptions(false)}
-                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-red-400 uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors border-t border-gray-50 mt-1"
+                      className="w-full text-left px-4 py-3 text-[10px] font-bold text-destructive uppercase tracking-widest hover:bg-destructive/5 rounded-xl transition-colors border-t border-border mt-1"
                     >
                       取消
                     </button>
@@ -134,24 +136,28 @@ const EditWorkPage = () => {
               </div>
               
               <button 
-                onClick={() => {
-                  const emoji = prompt('请输入一个 Emoji');
-                  if (emoji) {
-                    setCoverImage(emoji);
-                    setIsEmojiCover(true);
-                  }
-                }}
-                className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                onClick={() => setIsEmojiPickerOpen(true)}
+                className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
               >
-                <Smile size={32} className="text-gray-300 group-hover:text-primary transition-colors mb-2" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase">选择 Emoji</span>
+                <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
               </button>
             </div>
+
+            <EmojiPicker
+              isOpen={isEmojiPickerOpen}
+              onClose={() => setIsEmojiPickerOpen(false)}
+              onSelect={(emoji) => {
+                setCoverImage(emoji);
+                setIsEmojiCover(true);
+              }}
+              currentEmoji={isEmojiCover ? coverImage : undefined}
+            />
             
             {coverImage && (
-              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-gray-50">
+              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
                 {isEmojiCover ? (
-                  <div className="w-full h-full flex items-center justify-center text-7xl bg-gray-50">{coverImage}</div>
+                  <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{coverImage}</div>
                 ) : (
                   <img src={coverImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 )}

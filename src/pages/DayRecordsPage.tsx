@@ -19,13 +19,13 @@ const DayRecordsPage = () => {
   if (!date) return null;
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-in slide-in-from-bottom duration-300">
+    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-bottom duration-300">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-gray-50 sticky top-0 bg-white z-10">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-gray-900">
+      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest flex items-center gap-2">
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
           <Calendar size={16} className="text-primary" /> {formatDate(date)}
         </h2>
         <div className="w-10" />
@@ -40,9 +40,9 @@ const DayRecordsPage = () => {
                 <Link 
                   key={record.id} 
                   to={`/record/${record.id}`}
-                  className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
+                  className="bg-card rounded-3xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
                 >
-                  <div className="aspect-video bg-gray-50 relative overflow-hidden">
+                  <div className="aspect-video bg-muted/30 relative overflow-hidden">
                     {record.isEmojiMain ? (
                       <div className="w-full h-full flex items-center justify-center text-6xl">{record.mainImage}</div>
                     ) : (
@@ -51,10 +51,10 @@ const DayRecordsPage = () => {
                   </div>
                   <div className="p-5 flex items-center justify-between">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                         {data.categories.find(c => c.id === work?.categoryId)?.name}
                       </p>
-                      <h3 className="text-lg font-bold text-gray-900 serif">{record.title}</h3>
+                      <h3 className="text-lg font-bold text-foreground serif">{record.title}</h3>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                       <ChevronLeft size={20} className="rotate-180" />
@@ -65,8 +65,8 @@ const DayRecordsPage = () => {
             })}
           </div>
         ) : (
-          <div className="text-center py-24 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-            <p className="text-xs text-gray-400 italic">这一天没有记录哦</p>
+          <div className="text-center py-24 bg-card/50 rounded-3xl border border-dashed border-border/50">
+            <p className="text-xs text-muted-foreground italic">这一天没有记录哦</p>
           </div>
         )}
       </div>

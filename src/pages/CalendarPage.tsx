@@ -59,37 +59,37 @@ const CalendarPage = () => {
     <div className="pb-24 pt-6 px-4 space-y-8 animate-in fade-in duration-500">
       {/* Header & Copy */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-gray-900 serif flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <CalendarIcon size={24} className="text-primary" /> 日历
         </h1>
-        <p className="text-sm text-gray-500 italic leading-relaxed">
+        <p className="text-sm text-muted-foreground italic leading-relaxed">
           {randomCopy}
         </p>
       </header>
 
       {/* Monthly Stats */}
-      <section className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">本月统计</h2>
+      <section className="bg-card rounded-2xl p-4 shadow-sm border border-border/50">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">本月统计</h2>
         <div className="flex gap-6">
           {data.categories.map(cat => (
             <div key={cat.id} className="flex flex-col">
-              <span className="text-lg font-bold text-gray-900">{String(stats[cat.name] || 0).padStart(2, '0')}</span>
-              <span className="text-[10px] text-gray-400 font-medium">{cat.name}</span>
+              <span className="text-lg font-bold text-foreground">{String(stats[cat.name] || 0).padStart(2, '0')}</span>
+              <span className="text-[10px] text-muted-foreground font-medium">{cat.name}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* Calendar Control */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 space-y-6">
+      <div className="bg-card rounded-3xl p-6 shadow-sm border border-border/50 space-y-6">
         <div className="flex items-center justify-between">
-          <button onClick={prevMonth} className="p-2 text-gray-400 hover:text-primary transition-colors">
+          <button onClick={prevMonth} className="p-2 text-muted-foreground hover:text-primary transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <h3 className="text-lg font-bold text-gray-900 serif">
+          <h3 className="text-lg font-bold text-foreground">
             {year === new Date().getFullYear() ? `${month + 1}月` : `${year}.${month + 1}月`}
           </h3>
-          <button onClick={nextMonth} className="p-2 text-gray-400 hover:text-primary transition-colors">
+          <button onClick={nextMonth} className="p-2 text-muted-foreground hover:text-primary transition-colors">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -97,7 +97,7 @@ const CalendarPage = () => {
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-y-4">
           {['日', '一', '二', '三', '四', '五', '六'].map(d => (
-            <div key={d} className="text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest pb-2">
+            <div key={d} className="text-center text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest pb-2">
               {d}
             </div>
           ))}
@@ -116,12 +116,12 @@ const CalendarPage = () => {
                   <>
                     <span className={cn(
                       "text-xs font-medium z-10",
-                      dayRecords ? "text-white drop-shadow-sm" : "text-gray-400"
+                      dayRecords ? "text-white drop-shadow-sm" : "text-muted-foreground"
                     )}>
                       {day}
                     </span>
                     {dayRecords && (
-                      <div className="absolute inset-1 rounded-lg overflow-hidden flex flex-wrap gap-0.5 p-0.5 bg-gray-50 shadow-inner">
+                      <div className="absolute inset-1 rounded-lg overflow-hidden flex flex-wrap gap-0.5 p-0.5 bg-muted/50 shadow-inner">
                         {dayRecords.slice(0, 4).map((r, i) => (
                           <div key={i} className="flex-1 min-w-[40%] h-full flex items-center justify-center overflow-hidden rounded-sm">
                             {r.isEmojiMain ? (

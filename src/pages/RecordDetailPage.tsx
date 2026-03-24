@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import ImageViewer from '../components/ImageViewer';
 
 const RecordDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,24 +30,43 @@ const RecordDetailPage = () => {
   }, [id]);
 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
+
+  const allImages = useMemo(() => {
+    if (!record) return [];
+    const images = [];
+    if (!record.isEmojiMain && record.mainImage) {
+      images.push(record.mainImage);
+    }
+    if (record.extraImages && record.extraImages.length > 0) {
+      images.push(...record.extraImages);
+    }
+    return images;
+  }, [record]);
+
+  const openViewer = (index: number) => {
+    setViewerIndex(index);
+    setViewerOpen(true);
+  };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
         <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">正在加载记录...</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">正在加载记录...</p>
       </div>
     );
   }
 
   if (!record) return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center space-y-4">
-      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+      <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center text-muted-foreground/30">
         <RotateCcw size={32} />
       </div>
       <div className="space-y-1">
-        <p className="text-sm font-bold text-gray-900">记录不存在</p>
-        <p className="text-xs text-gray-400">该记录可能已被删除或尚未同步</p>
+        <p className="text-sm font-bold text-foreground">记录不存在</p>
+        <p className="text-xs text-muted-foreground">该记录可能已被删除或尚未同步</p>
       </div>
       <Button variant="ghost" onClick={() => navigate('/')} className="text-xs font-bold uppercase tracking-widest text-primary">返回首页</Button>
     </div>
@@ -76,8 +96,9 @@ const RecordDetailPage = () => {
           <img 
             src={record.mainImage} 
             alt={record.title} 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover cursor-pointer"
             referrerPolicy="no-referrer"
+            onClick={() => openViewer(0)}
           />
         )}
         
@@ -142,7 +163,11 @@ const RecordDetailPage = () => {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               {record.extraImages.map((img, idx) => (
-                <div key={idx} className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-gray-50">
+                <div 
+                  key={idx} 
+                  className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-gray-50 cursor-pointer"
+                  onClick={() => openViewer(record.isEmojiMain ? idx : idx + 1)}
+                >
                   <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 </div>
               ))}
@@ -151,7 +176,14 @@ const RecordDetailPage = () => {
         )}
 
         {/* Action Buttons */}
-        <div className="pt-8 border-t border-border/50">
+        <div className="pt-8 border-t border-border/50 space-y-4">
+          <Button 
+            className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
+            onClick={() => navigate(`/new-record?workId=${work?.id}`)}
+          >
+            再做一次
+          </Button>
+
           <Link 
             to={`/work/${work?.id}`}
             className="flex items-center justify-between w-full p-4 bg-card rounded-2xl group hover:bg-accent transition-colors border border-border/50"
@@ -172,19 +204,26 @@ const RecordDetailPage = () => {
         {/* Custom Delete Confirmation Modal */}
         {showConfirmDelete && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-[280px] space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-[280px] space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
               <div className="text-center space-y-2">
-                <Trash2 size={40} className="mx-auto text-red-500 mb-2" />
-                <h3 className="text-lg font-bold text-gray-900">删除记录</h3>
-                <p className="text-xs text-gray-400 leading-relaxed">确认删除吗？</p>
+                <Trash2 size={40} className="mx-auto text-destructive mb-2" />
+                <h3 className="text-lg font-bold text-foreground">删除记录</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">确认删除吗？</p>
               </div>
               <div className="flex flex-col gap-3">
                 <Button variant="destructive" onClick={handleDelete} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">确认删除</Button>
-                <Button variant="ghost" onClick={() => setShowConfirmDelete(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-gray-400">返回</Button>
+                <Button variant="ghost" onClick={() => setShowConfirmDelete(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">返回</Button>
               </div>
             </div>
           </div>
         )}
+        {/* ImageViewer */}
+        <ImageViewer 
+          images={allImages} 
+          initialIndex={viewerIndex} 
+          isOpen={viewerOpen} 
+          onClose={() => setViewerOpen(false)} 
+        />
       </div>
     </div>
   );

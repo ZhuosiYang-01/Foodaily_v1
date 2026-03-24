@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import EmojiPicker from '../components/EmojiPicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const EditRecordPage = () => {
@@ -29,6 +30,7 @@ const EditRecordPage = () => {
   const [notes, setNotes] = useState('');
   const [mainImage, setMainImage] = useState('');
   const [isEmojiMain, setIsEmojiMain] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [extraImages, setExtraImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -128,30 +130,30 @@ const EditRecordPage = () => {
   if (!record) return null;
 
   return (
-    <div className="min-h-screen bg-white pb-24 animate-in slide-in-from-right duration-300">
+    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-gray-50 sticky top-0 bg-white z-10">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-gray-900">
+      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
-        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">编辑记录</h2>
+        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest">编辑记录</h2>
         <div className="w-10" />
       </header>
 
       <div className="p-6 space-y-8">
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">制作日期 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">制作日期 *</Label>
             <Input 
               type="date" 
               value={date} 
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-xl border-gray-100"
+              className="rounded-xl border-border bg-card"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">作品名称 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">作品名称 *</Label>
             <Input 
               placeholder="请输入作品名称" 
               value={workName} 
@@ -163,14 +165,14 @@ const EditRecordPage = () => {
                   setTitle(newWorkName);
                 }
               }}
-              className="rounded-xl border-gray-100"
+              className="rounded-xl border-border bg-card"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">分类 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">分类 *</Label>
             <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger className="rounded-xl border-gray-100">
+              <SelectTrigger className="rounded-xl border-border bg-card">
                 <SelectValue placeholder="请选择分类" />
               </SelectTrigger>
               <SelectContent>
@@ -182,7 +184,7 @@ const EditRecordPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">记录名称 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">记录名称 *</Label>
             <Input 
               placeholder="请输入记录名称" 
               value={title} 
@@ -190,33 +192,33 @@ const EditRecordPage = () => {
                 setTitle(e.target.value);
                 setHasManuallyEditedTitle(true);
               }}
-              className="rounded-xl border-gray-100"
+              className="rounded-xl border-border bg-card"
             />
           </div>
 
           {selectedCategory?.supportsTaste && (
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">口味（选填）</Label>
+              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">口味（选填）</Label>
               <Input 
                 placeholder="例如：橙子、巧克力" 
                 value={taste} 
                 onChange={(e) => setTaste(e.target.value)}
-                className="rounded-xl border-gray-100"
+                className="rounded-xl border-border bg-card"
               />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">封面图 *</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">封面图 *</Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="relative">
                 <button
                   type="button"
-                  className="w-full aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-white"
+                  className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Camera size={32} className="text-gray-300 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-bold text-gray-400 uppercase">上传照片</span>
+                  <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
                 </button>
                 <input 
                   type="file" 
@@ -228,24 +230,28 @@ const EditRecordPage = () => {
               </div>
               
               <button 
-                onClick={() => {
-                  const emoji = prompt('请输入一个 Emoji');
-                  if (emoji) {
-                    setMainImage(emoji);
-                    setIsEmojiMain(true);
-                  }
-                }}
-                className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
+                onClick={() => setIsEmojiPickerOpen(true)}
+                className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
               >
-                <Smile size={32} className="text-gray-300 group-hover:text-primary transition-colors mb-2" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase">选择 Emoji</span>
+                <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
               </button>
             </div>
+
+            <EmojiPicker
+              isOpen={isEmojiPickerOpen}
+              onClose={() => setIsEmojiPickerOpen(false)}
+              onSelect={(emoji) => {
+                setMainImage(emoji);
+                setIsEmojiMain(true);
+              }}
+              currentEmoji={isEmojiMain ? mainImage : undefined}
+            />
             
             {mainImage && (
-              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-gray-50">
+              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
                 {isEmojiMain ? (
-                  <div className="w-full h-full flex items-center justify-center text-7xl bg-gray-50">{mainImage}</div>
+                  <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{mainImage}</div>
                 ) : (
                   <img src={mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 )}
@@ -260,30 +266,30 @@ const EditRecordPage = () => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">评价（选填）</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">评价（选填）</Label>
             <Textarea 
               placeholder="这次状态比上次更稳……" 
               value={evaluation} 
               onChange={(e) => setEvaluation(e.target.value)}
-              className="rounded-xl border-gray-100 min-h-[100px]"
+              className="rounded-xl border-border bg-card min-h-[100px]"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">备忘（选填）</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">备忘（选填）</Label>
             <Textarea 
               placeholder="下次少放一点糖……" 
               value={notes} 
               onChange={(e) => setNotes(e.target.value)}
-              className="rounded-xl border-gray-100 min-h-[100px]"
+              className="rounded-xl border-border bg-card min-h-[100px]"
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-gray-400 uppercase tracking-wider">其他照片 (最多 2 张)</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">其他照片 (最多 2 张)</Label>
             <div className="grid grid-cols-3 gap-3">
               {extraImages.map((img, idx) => (
-                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-gray-50">
+                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-border">
                   <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   <button 
                     onClick={() => setExtraImages(prev => prev.filter((_, i) => i !== idx))}
@@ -294,9 +300,9 @@ const EditRecordPage = () => {
                 </div>
               ))}
                   {extraImages.length < 2 && (
-                    <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group">
+                    <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer group bg-card">
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, false)} />
-                      <PlusCircleIcon size={24} className="text-gray-300 group-hover:text-primary transition-colors" />
+                      <PlusCircleIcon size={24} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
                     </label>
                   )}
             </div>

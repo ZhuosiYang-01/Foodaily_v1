@@ -83,7 +83,7 @@ const SettingsPage = () => {
     <div className="pb-24 pt-6 px-4 space-y-8 animate-in fade-in duration-500 relative min-h-screen bg-background">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-foreground serif flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <User size={24} className="text-primary" /> 设置
         </h1>
       </header>
@@ -130,8 +130,8 @@ const SettingsPage = () => {
 
       {/* Footer Info */}
       <footer className="text-center pt-8 space-y-1">
-        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Foodaily V0 测试版</p>
-        <p className="text-[10px] text-gray-400">Made with ❤️ for food lovers</p>
+        <p className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">Foodaily V0 测试版</p>
+        <p className="text-[10px] text-muted-foreground/50">Made with ❤️ for food lovers</p>
       </footer>
 
       {/* Custom Modals & Toasts */}

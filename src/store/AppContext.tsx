@@ -166,22 +166,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setData(prev => {
       let workId = record.workId;
       let updatedWorks = [...prev.works];
+      let isNewWork = false;
 
       if (!workId) {
         // 尝试按名称匹配已有作品
         const existingWork = prev.works.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
         if (existingWork) {
           workId = existingWork.id;
-          updatedWorks = updatedWorks.map(w => w.id === workId ? { 
-            ...w, 
-            updatedAt: now,
-            coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
-            isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
-          } : w);
         } else {
           workId = typeof crypto.randomUUID === 'function' 
             ? crypto.randomUUID() 
             : Math.random().toString(36).substring(2) + Date.now().toString(36);
+          isNewWork = true;
           updatedWorks.push({
             id: workId,
             categoryId: workInfo.categoryId,
@@ -193,13 +189,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             updatedAt: now,
           });
         }
-      } else {
-        updatedWorks = updatedWorks.map(w => w.id === workId ? { 
-          ...w, 
-          updatedAt: now,
-          coverImage: w.isManualCover ? w.coverImage : workInfo.coverImage,
-          isEmojiCover: w.isManualCover ? w.isEmojiCover : workInfo.isEmoji
-        } : w);
       }
 
       const newRecord: RecordEntry = {
@@ -209,10 +198,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: now,
       };
 
+      const allRecords = [newRecord, ...prev.records];
+
+      // 重新评估作品封面
+      const workRecords = allRecords.filter(r => r.workId === workId);
+      const latestRecord = [...workRecords].sort((a, b) => {
+        const dateDiff = b.date.localeCompare(a.date);
+        if (dateDiff !== 0) return dateDiff;
+        return b.createdAt - a.createdAt;
+      })[0];
+
+      updatedWorks = updatedWorks.map(w => {
+        if (w.id === workId) {
+          const updatedWork = { ...w, updatedAt: now };
+          if (!w.isManualCover && latestRecord) {
+            updatedWork.coverImage = latestRecord.mainImage;
+            updatedWork.isEmojiCover = latestRecord.isEmojiMain;
+          }
+          return updatedWork;
+        }
+        return w;
+      });
+
       return {
         ...prev,
         works: updatedWorks,
-        records: [newRecord, ...prev.records],
+        records: allRecords,
       };
     });
 
@@ -229,22 +240,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const recordToUpdate = prev.records.find(r => r.id === id);
       if (!recordToUpdate) return prev;
 
-      let newWorkId = record.workId || recordToUpdate.workId;
+      const oldWorkId = recordToUpdate.workId;
+      let newWorkId = record.workId || oldWorkId;
 
       // 如果提供了 workInfo，说明可能需要更换作品
       if (workInfo) {
-        const oldWorkId = recordToUpdate.workId;
         const existingWork = prev.works.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
         
         if (existingWork) {
           newWorkId = existingWork.id;
-          // 更新已有作品的 updatedAt 和封面（如果需要）
-          updatedWorks = updatedWorks.map(w => w.id === newWorkId ? {
-            ...w,
-            updatedAt: now,
-            coverImage: w.isManualCover ? w.coverImage : (record.mainImage || recordToUpdate.mainImage),
-            isEmojiCover: w.isManualCover ? w.isEmojiCover : (record.isEmojiMain ?? recordToUpdate.isEmojiMain)
-          } : w);
         } else {
           // 创建新作品
           newWorkId = crypto.randomUUID();
@@ -259,49 +263,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             updatedAt: now,
           });
         }
-
-        // 如果作品发生了变化，处理旧作品的封面
-        if (newWorkId !== oldWorkId) {
-          const oldWork = updatedWorks.find(w => w.id === oldWorkId);
-          if (oldWork && !oldWork.isManualCover) {
-            // 找出旧作品剩余的记录（排除当前正在更新的这条）
-            const remainingRecords = updatedRecords.filter(r => r.workId === oldWorkId && r.id !== id);
-            const latestRecord = [...remainingRecords].sort((a, b) => b.date.localeCompare(a.date))[0];
-            
-            if (latestRecord) {
-              updatedWorks = updatedWorks.map(w => w.id === oldWorkId ? {
-                ...w,
-                coverImage: latestRecord.mainImage,
-                isEmojiCover: latestRecord.isEmojiMain
-              } : w);
-            }
-          }
-        }
       }
 
       // 更新记录
       updatedRecords = updatedRecords.map(r => r.id === id ? { ...r, ...record, workId: newWorkId } : r);
 
-      // 如果更新了图片，且该记录是所属作品的最新记录，且作品封面不是手动设置的，则更新作品封面
-      if ('mainImage' in record || 'isEmojiMain' in record || workInfo) {
-        const targetRecord = updatedRecords.find(r => r.id === id);
-        if (targetRecord) {
-          const work = updatedWorks.find(w => w.id === targetRecord.workId);
-          if (work && !work.isManualCover) {
-            // 检查是否是最新记录（按日期排序）
-            const workRecords = updatedRecords.filter(r => r.workId === work.id);
-            const latestRecord = [...workRecords].sort((a, b) => b.date.localeCompare(a.date))[0];
+      // 重新评估受影响作品的封面
+      const affectedWorkIds = Array.from(new Set([oldWorkId, newWorkId]));
+      
+      updatedWorks = updatedWorks.map(w => {
+        if (affectedWorkIds.includes(w.id)) {
+          const updatedWork = { ...w, updatedAt: now };
+          if (!w.isManualCover) {
+            const workRecords = updatedRecords.filter(r => r.workId === w.id);
+            const latestRecord = [...workRecords].sort((a, b) => {
+              const dateDiff = b.date.localeCompare(a.date);
+              if (dateDiff !== 0) return dateDiff;
+              return b.createdAt - a.createdAt;
+            })[0];
             
-            if (latestRecord && latestRecord.id === id) {
-              updatedWorks = updatedWorks.map(w => w.id === work.id ? {
-                ...w,
-                coverImage: targetRecord.mainImage,
-                isEmojiCover: targetRecord.isEmojiMain
-              } : w);
+            if (latestRecord) {
+              updatedWork.coverImage = latestRecord.mainImage;
+              updatedWork.isEmojiCover = latestRecord.isEmojiMain;
             }
           }
+          return updatedWork;
         }
-      }
+        return w;
+      });
 
       return {
         ...prev,
@@ -351,7 +340,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // 如果还有剩余记录，更新封面（如果需要）
         const currentWork = prev.works.find(w => w.id === workId);
         if (currentWork && !currentWork.isManualCover) {
-          const latestRecord = [...remainingRecordsForWork].sort((a, b) => b.date.localeCompare(a.date))[0];
+          const latestRecord = [...remainingRecordsForWork].sort((a, b) => {
+            const dateDiff = b.date.localeCompare(a.date);
+            if (dateDiff !== 0) return dateDiff;
+            return b.createdAt - a.createdAt;
+          })[0];
           if (latestRecord) {
             updatedWorks = prev.works.map(w => w.id === workId ? {
               ...w,
@@ -422,10 +415,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const workExists = newWorks.some(w => w.id === restoredRecord.workId);
         if (!workExists) return prev;
 
+        const allRecords = [restoredRecord, ...prev.records];
+        const workId = restoredRecord.workId;
+
+        // 恢复后也要重新评估封面
+        newWorks = newWorks.map(w => {
+          if (w.id === workId && !w.isManualCover) {
+            const workRecords = allRecords.filter(r => r.workId === workId);
+            const latestRecord = [...workRecords].sort((a, b) => {
+              const dateDiff = b.date.localeCompare(a.date);
+              if (dateDiff !== 0) return dateDiff;
+              return b.createdAt - a.createdAt;
+            })[0];
+            if (latestRecord) {
+              return {
+                ...w,
+                coverImage: latestRecord.mainImage,
+                isEmojiCover: latestRecord.isEmojiMain
+              };
+            }
+          }
+          return w;
+        });
+
         return {
           ...prev,
           works: newWorks,
-          records: [restoredRecord, ...prev.records]
+          records: allRecords
         };
       } else if (lastDeleted.type === 'work') {
         const restoredWork = lastDeleted.data as Work;
