@@ -22,7 +22,7 @@ const DayRecordsPage = () => {
     <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-bottom duration-300">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
+        <button onClick={() => navigate('/calendar')} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
         <h2 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">

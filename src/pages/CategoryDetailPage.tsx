@@ -104,7 +104,7 @@ const CategoryDetailPage = () => {
           </>
         ) : (
           <>
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
+            <button onClick={() => navigate('/categories')} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
               <ChevronLeft size={24} />
             </button>
             <h2 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">

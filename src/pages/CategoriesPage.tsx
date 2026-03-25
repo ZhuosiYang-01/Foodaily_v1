@@ -61,19 +61,14 @@ const CategoriesPage = () => {
             </div>
 
             {cat.previewWorks.length > 0 ? (
-              <div className="flex gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {cat.previewWorks.map(work => (
-                  <div key={work.id} className="flex-1 aspect-square rounded-2xl overflow-hidden bg-background shadow-inner relative">
+                  <div key={work.id} className="aspect-square rounded-2xl overflow-hidden bg-background shadow-inner relative">
                     {work.isEmojiCover ? (
                       <div className="w-full h-full flex items-center justify-center text-3xl">{work.coverImage}</div>
                     ) : (
                       <img src={work.coverImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     )}
-                  </div>
-                ))}
-                {cat.previewWorks.length < 4 && Array.from({ length: 4 - cat.previewWorks.length }).map((_, i) => (
-                  <div key={i} className="flex-1 aspect-square rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground/30 text-[10px]">
-                    空
                   </div>
                 ))}
               </div>
@@ -85,6 +80,10 @@ const CategoriesPage = () => {
           </Link>
         ))}
       </div>
+
+      <p className="text-center text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest pb-4">
+        共 {data.works.length} 个作品 · 累计记录 {data.records.length} 次
+      </p>
     </div>
   );
 };

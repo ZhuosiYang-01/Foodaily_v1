@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, LayoutGrid, Download, Upload, Trash2, Info, User, Check, X, AlertTriangle, Layers } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 
 const SettingsPage = () => {
-  const { exportData, importData, clearAllData } = useApp();
+  const { exportData, importData, clearAllData, data } = useApp();
   const navigate = useNavigate();
 
+  const [showConfirmExport, setShowConfirmExport] = useState(false);
   const [showConfirmImport, setShowConfirmImport] = useState(false);
   const [importJson, setImportJson] = useState<string | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
@@ -66,7 +67,7 @@ const SettingsPage = () => {
   const settingsItems = [
     { to: '/settings/categories', icon: LayoutGrid, label: '分类设置', color: 'text-blue-500 bg-blue-50' },
     { to: '/batch-import', icon: Layers, label: '批量导入记录', color: 'text-orange-500 bg-orange-50' },
-    { onClick: handleExport, icon: Download, label: '导出数据', color: 'text-green-500 bg-green-50' },
+    { onClick: () => setShowConfirmExport(true), icon: Download, label: '导出数据', color: 'text-green-500 bg-green-50' },
     { onClick: null, icon: Upload, label: '导入数据', color: 'text-orange-500 bg-orange-50', isFile: true },
     { onClick: () => setShowConfirmClear(true), icon: Trash2, label: '清空数据', color: 'text-red-500 bg-red-50' },
     { to: '/about', icon: Info, label: '关于 Foodaily', color: 'text-gray-500 bg-gray-50' },
@@ -127,6 +128,36 @@ const SettingsPage = () => {
       </footer>
 
       {/* Custom Modals & Toasts */}
+      {showConfirmExport && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">
+            <div className="text-center space-y-2">
+              <Download size={40} className="mx-auto text-green-500 mb-2" />
+              <h3 className="text-lg font-bold text-foreground">导出数据</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">将把以下数据打包为 JSON 文件保存到本机</p>
+            </div>
+            <div className="bg-muted/40 rounded-2xl p-4 space-y-2">
+              <div className="flex justify-between text-xs font-bold">
+                <span className="text-muted-foreground">分类</span>
+                <span className="text-foreground">{data.categories.length} 个</span>
+              </div>
+              <div className="flex justify-between text-xs font-bold">
+                <span className="text-muted-foreground">作品</span>
+                <span className="text-foreground">{data.works.length} 个</span>
+              </div>
+              <div className="flex justify-between text-xs font-bold">
+                <span className="text-muted-foreground">记录</span>
+                <span className="text-foreground">{data.records.length} 条</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button onClick={() => { handleExport(); setShowConfirmExport(false); }} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">导出所有数据</Button>
+              <Button variant="ghost" onClick={() => setShowConfirmExport(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">取消</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showConfirmImport && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">

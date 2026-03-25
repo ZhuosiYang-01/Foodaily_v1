@@ -109,7 +109,7 @@ const HomePage = () => {
             </div>
 
             {cat.records.length > 0 ? (
-              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x">
+              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x">
                 {cat.records.map(record => {
                   const work = data.works.find(w => w.id === record.workId);
                   return (
