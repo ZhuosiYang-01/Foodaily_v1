@@ -114,7 +114,7 @@ const CategoryDetailPage = () => {
           </div>
         ) : (
           <div className="text-center py-24 bg-muted/20 rounded-3xl border border-dashed border-border">
-            <p className="text-xs text-muted-foreground italic">该分类暂无作品 ✨</p>
+            <p className="text-xs text-muted-foreground italic">该分类暂无作品</p>
           </div>
         )}
       </div>

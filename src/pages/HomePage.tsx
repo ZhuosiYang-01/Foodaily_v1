@@ -56,7 +56,13 @@ const HomePage = () => {
         <header className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground serif">Foodaily</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            今天是你记录下厨的第 {recordingDays} 天，{randomSuffix}
+            {data.records.length === 0 ? (
+              <>
+                欢迎来到 Foodaily！准备好记录今天的美味了吗？你也可以把以前的好手艺 <Link to="/batch-import" className="text-primary hover:underline font-semibold">批量导入记录</Link>
+              </>
+            ) : (
+              <>今天是你记录下厨的第 {recordingDays} 天，{randomSuffix}</>
+            )}
           </p>
         </header>
 
@@ -136,7 +142,7 @@ const HomePage = () => {
               </div>
             ) : (
               <div className="bg-card rounded-2xl p-8 text-center border border-dashed border-border/50">
-                <p className="text-xs text-muted-foreground">暂无记录，快去开启你的第一道美味吧 ✨</p>
+                <p className="text-xs text-muted-foreground">暂无记录，快去开启你的第一道美味吧</p>
               </div>
             )}
           </section>

@@ -114,7 +114,7 @@ const SearchPage = () => {
 
             {results.works.length === 0 && results.records.length === 0 && (
               <div className="text-center py-24">
-                <p className="text-sm text-muted-foreground italic">未找到相关内容 ✨</p>
+                <p className="text-sm text-muted-foreground italic">未找到相关内容</p>
               </div>
             )}
           </>

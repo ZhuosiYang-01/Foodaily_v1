@@ -65,7 +65,7 @@ const SettingsPage = () => {
 
   const settingsItems = [
     { to: '/settings/categories', icon: LayoutGrid, label: '分类设置', color: 'text-blue-500 bg-blue-50' },
-    { to: '/batch-import', icon: Layers, label: '批量导入旧作品', color: 'text-orange-500 bg-orange-50' },
+    { to: '/batch-import', icon: Layers, label: '批量导入记录', color: 'text-orange-500 bg-orange-50' },
     { onClick: handleExport, icon: Download, label: '导出数据', color: 'text-green-500 bg-green-50' },
     { onClick: null, icon: Upload, label: '导入数据', color: 'text-orange-500 bg-orange-50', isFile: true },
     { onClick: () => setShowConfirmClear(true), icon: Trash2, label: '清空数据', color: 'text-red-500 bg-red-50' },

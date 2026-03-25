@@ -13,7 +13,7 @@ const NotFound = () => {
       </div>
       <div className="space-y-2">
         <h1 className="text-4xl font-bold serif text-foreground">404</h1>
-        <p className="text-sm text-muted-foreground italic">哎呀，这个页面好像被吃掉了 ✨</p>
+        <p className="text-sm text-muted-foreground italic">哎呀，这个页面好像被吃掉了</p>
       </div>
       <Button 
         onClick={() => navigate('/')}

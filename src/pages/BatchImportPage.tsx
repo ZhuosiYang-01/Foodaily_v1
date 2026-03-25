@@ -162,7 +162,7 @@ const BatchImportPage = () => {
           <ChevronLeft size={24} />
         </button>
         <h2 className="text-sm font-bold text-foreground uppercase tracking-widest">
-          批量导入旧作品 {items.length > 0 && `(${items.length})`}
+          批量导入记录 {items.length > 0 && `(${items.length})`}
         </h2>
         <Button 
           variant="ghost" 
