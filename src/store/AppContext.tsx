@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import localforage from 'localforage';
 import { Category, Work, RecordEntry, AppData, MonthlyStats } from '../types';
+import { supabase } from '../lib/supabase';
+import { fetchDataFromSupabase, syncDataToSupabase } from '../lib/syncService';
 
 interface AppContextType {
   data: AppData;
@@ -28,6 +30,8 @@ interface AppContextType {
   exportData: () => string;
   importData: (json: string, mode: 'merge' | 'replace') => void;
   clearAllData: () => void;
+  syncStatus: 'idle' | 'syncing' | 'error';
+  currentUserId: string | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -51,12 +55,16 @@ const STORAGE_KEY = 'foodaily_v2_data';
 const INITIALIZED_KEY = 'foodaily_v2_initialized';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<AppData>({ 
-    categories: DEFAULT_CATEGORIES, 
-    works: INITIAL_WORKS, 
-    records: INITIAL_RECORDS 
+  const [data, setData] = useState<AppData>({
+    categories: DEFAULT_CATEGORIES,
+    works: INITIAL_WORKS,
+    records: INITIAL_RECORDS
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const isSyncingFromCloud = useRef(false);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load data on mount
   useEffect(() => {
@@ -99,6 +107,71 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     saveData();
   }, [data, isLoading]);
+
+  // Listen to Supabase auth state: load data on login, clear on logout
+  useEffect(() => {
+    const loadFromCloud = async (userId: string) => {
+      isSyncingFromCloud.current = true;
+      setSyncStatus('syncing');
+      const cloudData = await fetchDataFromSupabase(userId);
+      if (cloudData) {
+        setData(cloudData);
+        await localforage.setItem(STORAGE_KEY, cloudData);
+      }
+      setSyncStatus('idle');
+      isSyncingFromCloud.current = false;
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+        loadFromCloud(session.user.id);
+      } else {
+        setCurrentUserId(null);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setCurrentUserId(session.user.id);
+        loadFromCloud(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUserId(null);
+        // Reset to empty state on logout
+        setData({ categories: DEFAULT_CATEGORIES, works: [], records: [] });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Debounced sync to Supabase after data changes
+  useEffect(() => {
+    if (!currentUserId || isLoading || isSyncingFromCloud.current) return;
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(async () => {
+      setSyncStatus('syncing');
+      try {
+        const updatedData = await syncDataToSupabase(currentUserId, data);
+        // If images were uploaded (base64 → URL), update local data too
+        if (updatedData !== data) {
+          isSyncingFromCloud.current = true;
+          setData(updatedData);
+          await localforage.setItem(STORAGE_KEY, updatedData);
+          isSyncingFromCloud.current = false;
+        }
+        setSyncStatus('idle');
+      } catch (e) {
+        console.error('Sync failed:', e);
+        setSyncStatus('error');
+      }
+    }, 2000);
+
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, [data, currentUserId, isLoading]);
 
   useEffect(() => {
     const initialized = localStorage.getItem(INITIALIZED_KEY);
@@ -722,7 +795,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       loadDemoData,
       exportData,
       importData,
-      clearAllData
+      clearAllData,
+      syncStatus,
+      currentUserId,
     }}>
       {children}
     </AppContext.Provider>
