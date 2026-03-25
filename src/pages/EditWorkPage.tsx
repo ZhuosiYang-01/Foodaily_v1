@@ -63,7 +63,7 @@ const EditWorkPage = () => {
   return (
     <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+      <header className="flex items-center justify-between p-4 border-b border-border/50 sticky top-0 bg-background shadow-sm z-10">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>

@@ -32,7 +32,7 @@ const UndoBar = () => {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl z-50 p-8 pb-10 border-t border-gray-50"
+            className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-[32px] shadow-2xl z-50 p-8 pb-10 border-t border-gray-50"
           >
             <div className="max-w-md mx-auto space-y-8">
               <div className="text-center space-y-2">

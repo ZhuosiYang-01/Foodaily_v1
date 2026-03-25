@@ -19,7 +19,7 @@ const CategoriesPage = () => {
         ...cat,
         workCount: works.length,
         recordCount: records.length,
-        previewWorks: [...works].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 3)
+        previewWorks: [...works].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 4)
       };
     });
   }, [data]);
@@ -61,7 +61,7 @@ const CategoriesPage = () => {
             </div>
 
             {cat.previewWorks.length > 0 ? (
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 {cat.previewWorks.map(work => (
                   <div key={work.id} className="flex-1 aspect-square rounded-2xl overflow-hidden bg-background shadow-inner relative">
                     {work.isEmojiCover ? (
@@ -69,12 +69,9 @@ const CategoriesPage = () => {
                     ) : (
                       <img src={work.coverImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     )}
-                    <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-black/20 backdrop-blur-sm">
-                      <p className="text-[8px] font-bold text-white truncate text-center">{work.name}</p>
-                    </div>
                   </div>
                 ))}
-                {cat.previewWorks.length < 3 && Array.from({ length: 3 - cat.previewWorks.length }).map((_, i) => (
+                {cat.previewWorks.length < 4 && Array.from({ length: 4 - cat.previewWorks.length }).map((_, i) => (
                   <div key={i} className="flex-1 aspect-square rounded-2xl border-2 border-dashed border-border/50 flex items-center justify-center text-muted-foreground/30 text-[10px]">
                     空
                   </div>

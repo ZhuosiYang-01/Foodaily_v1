@@ -168,7 +168,7 @@ const BatchImportPage = () => {
       style={{ touchAction: 'pan-y' }}
     >
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-md shrink-0">
+      <header className="flex items-center justify-between p-4 border-b border-border/50 bg-background shadow-sm shrink-0">
         <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
           <ChevronLeft size={24} />
         </button>
@@ -340,7 +340,7 @@ const BatchImportPage = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border z-20">
+              <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-background border-t border-border/50 shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.1)] z-20">
                 <Button 
                   onClick={handleSaveAll}
                   disabled={isSaving || isProcessing}

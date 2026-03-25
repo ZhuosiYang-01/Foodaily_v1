@@ -86,9 +86,12 @@ const CategoryDetailPage = () => {
   if (!category) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300 pt-[72px]">
+    <div className={cn(
+      "min-h-screen bg-background animate-in slide-in-from-right duration-300 pt-[72px]",
+      isSelectionMode ? "pb-40" : "pb-24"
+    )}>
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-md z-50">
+      <header className="fixed top-0 left-0 right-0 max-w-md mx-auto flex items-center justify-between p-4 border-b border-border/50 bg-background shadow-sm z-50">
         {isSelectionMode ? (
           <>
             <button onClick={() => { setIsSelectionMode(false); setSelectedWorkIds([]); }} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
@@ -193,7 +196,7 @@ const CategoryDetailPage = () => {
 
       {/* Selection Action Bar */}
       {isSelectionMode && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border z-20 animate-in slide-in-from-bottom flex gap-3">
+        <div className="fixed bottom-16 left-0 right-0 max-w-md mx-auto p-4 bg-background border-t border-border/50 shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.1)] z-40 animate-in slide-in-from-bottom flex gap-3">
           <Button 
             variant="outline"
             className="flex-1 rounded-2xl h-12 text-xs font-bold uppercase tracking-widest border-destructive/20 text-destructive hover:bg-destructive/10"
