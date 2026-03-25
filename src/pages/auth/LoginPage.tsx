@@ -61,7 +61,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-background flex flex-col px-6 pt-16 pb-8">
       <div className="mb-10 space-y-1">
         <h1 className="text-3xl font-bold text-foreground serif">Foodaily</h1>
-        <p className="text-sm text-muted-foreground">记录每一道美味</p>
+        <p className="text-sm text-muted-foreground">Your Daily Cooking Gallery</p>
       </div>
 
       {/* Mode Tabs */}

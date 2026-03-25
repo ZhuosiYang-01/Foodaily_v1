@@ -115,8 +115,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSyncStatus('syncing');
       const cloudData = await fetchDataFromSupabase(userId);
       if (cloudData) {
-        setData(cloudData);
-        await localforage.setItem(STORAGE_KEY, cloudData);
+        // New user: no categories yet → initialize with defaults and sync to Supabase
+        if (cloudData.categories.length === 0) {
+          const initialData: AppData = {
+            categories: DEFAULT_CATEGORIES,
+            works: [],
+            records: [],
+          };
+          setData(initialData);
+          await localforage.setItem(STORAGE_KEY, initialData);
+          await syncDataToSupabase(userId, initialData);
+        } else {
+          setData(cloudData);
+          await localforage.setItem(STORAGE_KEY, cloudData);
+        }
       }
       setSyncStatus('idle');
       isSyncingFromCloud.current = false;

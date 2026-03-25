@@ -21,6 +21,7 @@ import SettingsPage from './pages/SettingsPage';
 import BatchImportPage from './pages/BatchImportPage';
 import CategorySettingsPage from './pages/CategorySettingsPage';
 import AboutPage from './pages/AboutPage';
+import AccountPage from './pages/AccountPage';
 import NotFound from './pages/NotFound';
 import BottomNav from './components/BottomNav';
 import UndoBar from './components/UndoBar';
@@ -83,6 +84,7 @@ function MainContent() {
             <Route path="/batch-import" element={<RequireAuth><BatchImportPage /></RequireAuth>} />
             <Route path="/settings/categories" element={<RequireAuth><CategorySettingsPage /></RequireAuth>} />
             <Route path="/about" element={<RequireAuth><AboutPage /></RequireAuth>} />
+            <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
             <Route path="/login" element={<RedirectIfAuth><LoginPage /></RedirectIfAuth>} />
             <Route path="/register" element={<RedirectIfAuth><RegisterPage /></RedirectIfAuth>} />
             <Route path="/forgot-password" element={<RedirectIfAuth><ForgotPasswordPage /></RedirectIfAuth>} />

@@ -26,16 +26,23 @@ const RegisterPage = () => {
     if (password !== confirmPassword) { setError('两次输入的密码不一致'); return; }
 
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
 
     if (error) {
-      if (error.message.includes('already registered')) {
+      const msg = error.message || error.code || '';
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
         setError('该邮箱已注册，请直接登录');
+      } else if ((error as any).status === 504) {
+        setError('服务器超时，请稍后重试');
       } else {
-        setError(error.message);
+        setError(msg || '注册失败，请重试');
       }
+    } else if (data.session) {
+      // Email confirmation disabled: user is logged in immediately
+      navigate('/', { replace: true });
     } else {
+      // Email confirmation enabled: need OTP
       setStep('verify');
     }
   };

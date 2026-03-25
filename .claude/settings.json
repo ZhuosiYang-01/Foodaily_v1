@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"fetch\\\\|axios\\\\|http\\\\|api\" /e/Foodaily/Foodaily_v1/src --include=*.ts --include=*.tsx --include=*.js)",
+      "Bash(xargs grep:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
