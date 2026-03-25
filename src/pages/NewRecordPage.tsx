@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import EmojiPicker from '../components/EmojiPicker';
+import { compressImage, extractPhotoDate } from '../lib/imageUtils';
 
 const NewRecordPage = () => {
   const { data, addRecord } = useApp();
@@ -67,49 +68,29 @@ const NewRecordPage = () => {
     }
   }, [taste, workName]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          // Max dimension 1200px
-          const MAX_DIM = 1200;
-          if (width > height) {
-            if (width > MAX_DIM) {
-              height *= MAX_DIM / width;
-              width = MAX_DIM;
-            }
-          } else {
-            if (height > MAX_DIM) {
-              width *= MAX_DIM / height;
-              height = MAX_DIM;
-            }
+      try {
+        // Extract date if it's the main image
+        if (isMain) {
+          const photoDate = await extractPhotoDate(file);
+          if (photoDate) {
+            setDate(photoDate);
           }
-          
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          // Compress to 0.7 quality
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
-          if (isMain) {
-            setMainImage(compressedDataUrl);
-            setIsEmojiMain(false);
-          } else {
-            setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
-          }
-        };
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
+        }
+
+        const compressedDataUrl = await compressImage(file, 1080, 0.7);
+        
+        if (isMain) {
+          setMainImage(compressedDataUrl);
+          setIsEmojiMain(false);
+        } else {
+          setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
+        }
+      } catch (error) {
+        console.error('Image processing failed:', error);
+      }
     }
     // Reset input value so the same file can be selected again
     e.target.value = '';
@@ -179,6 +160,64 @@ const NewRecordPage = () => {
           <>
             {/* Step 1: Basic Info */}
             <div className="space-y-6">
+              {/* Image Upload First */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">封面图 *</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
+                    </button>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      onChange={(e) => handleImageUpload(e, true)} 
+                    />
+                  </div>
+                  
+                  <button 
+                    onClick={() => setIsEmojiPickerOpen(true)}
+                    className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
+                  >
+                    <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
+                  </button>
+                </div>
+
+                <EmojiPicker
+                  isOpen={isEmojiPickerOpen}
+                  onClose={() => setIsEmojiPickerOpen(false)}
+                  onSelect={(emoji) => {
+                    setMainImage(emoji);
+                    setIsEmojiMain(true);
+                  }}
+                  currentEmoji={isEmojiMain ? mainImage : undefined}
+                />
+                
+                {mainImage && (
+                  <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
+                    {isEmojiMain ? (
+                      <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{mainImage}</div>
+                    ) : (
+                      <img src={mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    )}
+                    <button 
+                      onClick={() => setMainImage('')}
+                      className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">作品名称 *</Label>
                 <Input 
@@ -236,63 +275,6 @@ const NewRecordPage = () => {
                   onChange={(e) => setDate(e.target.value)}
                   className="rounded-xl border-border bg-card"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">封面图 *</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="relative">
-                    <button
-                      type="button"
-                      className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
-                    </button>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      ref={fileInputRef} 
-                      onChange={(e) => handleImageUpload(e, true)} 
-                    />
-                  </div>
-                  
-                  <button 
-                    onClick={() => setIsEmojiPickerOpen(true)}
-                    className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
-                  >
-                    <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
-                  </button>
-                </div>
-
-                <EmojiPicker
-                  isOpen={isEmojiPickerOpen}
-                  onClose={() => setIsEmojiPickerOpen(false)}
-                  onSelect={(emoji) => {
-                    setMainImage(emoji);
-                    setIsEmojiMain(true);
-                  }}
-                  currentEmoji={isEmojiMain ? mainImage : undefined}
-                />
-                
-                {mainImage && (
-                  <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
-                    {isEmojiMain ? (
-                      <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{mainImage}</div>
-                    ) : (
-                      <img src={mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    )}
-                    <button 
-                      onClick={() => setMainImage('')}
-                      className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 

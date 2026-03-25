@@ -19,7 +19,7 @@ const CategoriesPage = () => {
         ...cat,
         workCount: works.length,
         recordCount: records.length,
-        previewWorks: works.slice(0, 3)
+        previewWorks: [...works].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 3)
       };
     });
   }, [data]);

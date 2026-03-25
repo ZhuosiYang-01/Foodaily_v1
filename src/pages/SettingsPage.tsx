@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, LayoutGrid, Download, Upload, Trash2, Info, User, Check, X, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, LayoutGrid, Download, Upload, Trash2, Info, User, Check, X, AlertTriangle, Layers } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 
 const SettingsPage = () => {
-  const { exportData, importData, clearAllData, loadDemoData } = useApp();
+  const { exportData, importData, clearAllData } = useApp();
   const navigate = useNavigate();
 
   const [showConfirmImport, setShowConfirmImport] = useState(false);
   const [importJson, setImportJson] = useState<string | null>(null);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
-  const [showConfirmDemo, setShowConfirmDemo] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -64,15 +63,9 @@ const SettingsPage = () => {
     setShowConfirmClear(false);
   };
 
-  const handleDemoConfirm = () => {
-    loadDemoData();
-    showToast('演示数据已加载');
-    setShowConfirmDemo(false);
-  };
-
   const settingsItems = [
     { to: '/settings/categories', icon: LayoutGrid, label: '分类设置', color: 'text-blue-500 bg-blue-50' },
-    { onClick: () => setShowConfirmDemo(true), icon: Check, label: '加载演示数据', color: 'text-purple-500 bg-purple-50' },
+    { to: '/batch-import', icon: Layers, label: '批量导入旧作品', color: 'text-orange-500 bg-orange-50' },
     { onClick: handleExport, icon: Download, label: '导出数据', color: 'text-green-500 bg-green-50' },
     { onClick: null, icon: Upload, label: '导入数据', color: 'text-orange-500 bg-orange-50', isFile: true },
     { onClick: () => setShowConfirmClear(true), icon: Trash2, label: '清空数据', color: 'text-red-500 bg-red-50' },
@@ -135,22 +128,6 @@ const SettingsPage = () => {
       </footer>
 
       {/* Custom Modals & Toasts */}
-      {showConfirmDemo && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">
-            <div className="text-center space-y-2">
-              <Check size={40} className="mx-auto text-purple-500 mb-2" />
-              <h3 className="text-lg font-bold text-foreground">加载演示数据</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">加载演示数据将覆盖当前所有数据，确定继续吗？</p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Button onClick={handleDemoConfirm} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest bg-purple-600 hover:bg-purple-700">确认加载</Button>
-              <Button variant="ghost" onClick={() => setShowConfirmDemo(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">取消</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showConfirmImport && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
           <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-xs space-y-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-border/50">

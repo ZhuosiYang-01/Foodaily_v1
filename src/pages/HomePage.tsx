@@ -24,6 +24,7 @@ const HomePage = () => {
           const work = data.works.find(w => w.id === r.workId);
           return work?.categoryId === cat.id;
         })
+        .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, 4);
       return { ...cat, records };
     });

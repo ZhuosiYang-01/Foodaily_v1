@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import localforage from 'localforage';
 import { Category, Work, RecordEntry, AppData, MonthlyStats } from '../types';
 
 interface AppContextType {
   data: AppData;
+  isLoading: boolean;
   addCategory: (category: Omit<Category, 'id' | 'order'>) => void;
   updateCategory: (id: string, category: Partial<Category>) => void;
   deleteCategory: (id: string, force?: boolean) => void;
@@ -27,6 +29,12 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Configure localforage
+localforage.config({
+  name: 'Foodaily',
+  storeName: 'app_data'
+});
+
 const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-1', name: '菜品', icon: '🍽️', supportsTaste: false, order: 0 },
   { id: 'cat-2', name: '烘焙', icon: '🥐', supportsTaste: true, order: 1 },
@@ -34,38 +42,60 @@ const DEFAULT_CATEGORIES: Category[] = [
 ];
 
 const INITIAL_WORKS: Work[] = [];
-
 const INITIAL_RECORDS: RecordEntry[] = [];
 
 const STORAGE_KEY = 'foodaily_v2_data';
 const INITIALIZED_KEY = 'foodaily_v2_initialized';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<AppData>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+  const [data, setData] = useState<AppData>({ 
+    categories: DEFAULT_CATEGORIES, 
+    works: INITIAL_WORKS, 
+    records: INITIAL_RECORDS 
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load data on mount
+  useEffect(() => {
+    const loadData = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.categories && parsed.works && parsed.records) {
-          return parsed;
+        const saved = await localforage.getItem<AppData>(STORAGE_KEY);
+        if (saved && saved.categories && saved.works && saved.records) {
+          setData(saved);
+        } else {
+          // Fallback to localStorage if IndexedDB is empty (for migration)
+          const legacySaved = localStorage.getItem(STORAGE_KEY);
+          if (legacySaved) {
+            const parsed = JSON.parse(legacySaved);
+            setData(parsed);
+            // Save to IndexedDB for future
+            await localforage.setItem(STORAGE_KEY, parsed);
+          }
         }
       } catch (e) {
-        console.error('Failed to parse saved data', e);
+        console.error('Failed to load data from localforage', e);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    return { categories: DEFAULT_CATEGORIES, works: INITIAL_WORKS, records: INITIAL_RECORDS };
-  });
+    };
 
+    loadData();
+  }, []);
+
+  // Save data whenever it changes
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.error('Failed to save data to localStorage', e);
-      if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-        alert('存储空间已满，无法保存更多照片。请尝试删除一些旧记录或减小照片大小。');
+    if (isLoading) return;
+    
+    const saveData = async () => {
+      try {
+        await localforage.setItem(STORAGE_KEY, data);
+      } catch (e) {
+        console.error('Failed to save data to localforage', e);
       }
-    }
-  }, [data]);
+    };
+
+    saveData();
+  }, [data, isLoading]);
 
   useEffect(() => {
     const initialized = localStorage.getItem(INITIALIZED_KEY);
@@ -503,7 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       r.title.toLowerCase().includes(q) || 
       r.evaluation.toLowerCase().includes(q) || 
       r.notes.toLowerCase().includes(q)
-    );
+    ).sort((a, b) => b.date.localeCompare(a.date));
     return { works, records };
   };
 
@@ -549,6 +579,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{
       data,
+      isLoading,
       addCategory,
       updateCategory,
       deleteCategory,

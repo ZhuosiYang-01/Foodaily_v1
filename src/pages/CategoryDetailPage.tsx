@@ -12,7 +12,15 @@ const CategoryDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { data } = useApp();
   const navigate = useNavigate();
-  const [sortBy, setSortBy] = useState<SortType>('recent');
+  const [sortBy, setSortBy] = useState<SortType>(() => {
+    const saved = sessionStorage.getItem(`sort_pref_${id}`);
+    return (saved as SortType) || 'recent';
+  });
+
+  const handleSortChange = (value: SortType) => {
+    setSortBy(value);
+    sessionStorage.setItem(`sort_pref_${id}`, value);
+  };
 
   const category = useMemo(() => data.categories.find(c => c.id === id), [id, data.categories]);
   
@@ -65,7 +73,7 @@ const CategoryDetailPage = () => {
           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest">
             <ArrowUpDown size={14} /> 排序方式
           </div>
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortType)}>
+          <Select value={sortBy} onValueChange={(v) => handleSortChange(v as SortType)}>
             <SelectTrigger className="w-[140px] h-9 rounded-full bg-card border-border text-xs font-bold">
               <SelectValue />
             </SelectTrigger>

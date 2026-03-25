@@ -127,7 +127,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
               transition={{ duration: 1, delay: 1.2 }}
               className="flex flex-col items-center"
             >
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-muted-foreground pl-[0.15em] serif">
+              <p className="text-base font-medium tracking-[0.15em] uppercase text-muted-foreground pl-[0.15em] serif">
                 Your Daily Cooking Gallery
               </p>
             </motion.div>

@@ -1,16 +1,51 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../store/AppContext';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const CalendarPage = () => {
   const { data, getMonthlyStats } = useApp();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
 
+  const [showPicker, setShowPicker] = useState(false);
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    let startYear = currentYear;
+    let startMonth = currentMonth;
+
+    if (data.records.length > 0) {
+      const sortedDates = data.records
+        .map(r => new Date(r.date))
+        .sort((a, b) => a.getTime() - b.getTime());
+      const firstDate = sortedDates[0];
+      startYear = firstDate.getFullYear();
+      startMonth = firstDate.getMonth();
+    }
+
+    const availableYears = [];
+    for (let i = startYear; i <= currentYear; i++) {
+      availableYears.push(i);
+    }
+
+    return {
+      startYear,
+      startMonth,
+      currentYear,
+      currentMonth,
+      availableYears
+    };
+  }, [data.records]);
 
   const stats = useMemo(() => getMonthlyStats(year, month + 1), [year, month, data.records]);
 
@@ -81,18 +116,83 @@ const CalendarPage = () => {
       </section>
 
       {/* Calendar Control */}
-      <div className="bg-card rounded-3xl p-6 shadow-sm border border-border/50 space-y-6">
+      <div className="bg-card rounded-3xl p-6 shadow-sm border border-border/50 space-y-6 relative">
         <div className="flex items-center justify-between">
           <button onClick={prevMonth} className="p-2 text-muted-foreground hover:text-primary transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <h3 className="text-lg font-bold text-foreground">
-            {year === new Date().getFullYear() ? `${month + 1}月` : `${year}.${month + 1}月`}
-          </h3>
+          <button 
+            onClick={() => setShowPicker(!showPicker)}
+            className="flex items-center gap-1 px-4 py-1 rounded-full hover:bg-muted transition-colors"
+          >
+            <h3 className="text-lg font-bold text-foreground">
+              {year}年 {month + 1}月
+            </h3>
+            <ChevronDown size={16} className={cn("text-muted-foreground transition-transform", showPicker && "rotate-180")} />
+          </button>
           <button onClick={nextMonth} className="p-2 text-muted-foreground hover:text-primary transition-colors">
             <ChevronRight size={20} />
           </button>
         </div>
+
+        {/* Year/Month Picker Overlay */}
+        <AnimatePresence>
+          {showPicker && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-16 left-6 right-6 bg-card border border-border shadow-xl rounded-2xl z-20 p-4 space-y-4"
+            >
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">选择年份</p>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                  {dateRange.availableYears.map(y => (
+                    <button
+                      key={y}
+                      onClick={() => setCurrentDate(new Date(y, month, 1))}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-xs font-bold shrink-0 snap-start transition-colors",
+                        y === year ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">选择月份</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const isBeforeStart = year === dateRange.startYear && i < dateRange.startMonth;
+                    const isAfterCurrent = year === dateRange.currentYear && i > dateRange.currentMonth;
+                    const isDisabled = isBeforeStart || isAfterCurrent;
+
+                    return (
+                      <button
+                        key={i}
+                        disabled={isDisabled}
+                        onClick={() => {
+                          setCurrentDate(new Date(year, i, 1));
+                          setShowPicker(false);
+                        }}
+                        className={cn(
+                          "py-2 rounded-xl text-xs font-bold transition-colors",
+                          i === month ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80",
+                          isDisabled && "opacity-20 cursor-not-allowed grayscale"
+                        )}
+                      >
+                        {i + 1}月
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-y-4">

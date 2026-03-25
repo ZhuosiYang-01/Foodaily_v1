@@ -4,8 +4,8 @@
   "description": "Your Daily Cooking Gallery",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FDFCFB",
-  "theme_color": "#846341",
+  "background_color": "#F5F2ED",
+  "theme_color": "#5C4033",
   "icons": [
     {
       "src": "/icon.svg",

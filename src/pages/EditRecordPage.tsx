@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import EmojiPicker from '../components/EmojiPicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { compressImage, extractPhotoDate } from '../lib/imageUtils';
 
 const EditRecordPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -51,49 +52,29 @@ const EditRecordPage = () => {
 
   const selectedCategory = useMemo(() => data.categories.find(c => c.id === categoryId), [categoryId, data.categories]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isMain: boolean) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          // Max dimension 1200px
-          const MAX_DIM = 1200;
-          if (width > height) {
-            if (width > MAX_DIM) {
-              height *= MAX_DIM / width;
-              width = MAX_DIM;
-            }
-          } else {
-            if (height > MAX_DIM) {
-              width *= MAX_DIM / height;
-              height = MAX_DIM;
-            }
+      try {
+        // Extract date if it's the main image
+        if (isMain) {
+          const photoDate = await extractPhotoDate(file);
+          if (photoDate) {
+            setDate(photoDate);
           }
-          
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          // Compress to 0.7 quality
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          
-          if (isMain) {
-            setMainImage(compressedDataUrl);
-            setIsEmojiMain(false);
-          } else {
-            setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
-          }
-        };
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
+        }
+
+        const compressedDataUrl = await compressImage(file, 1080, 0.7);
+        
+        if (isMain) {
+          setMainImage(compressedDataUrl);
+          setIsEmojiMain(false);
+        } else {
+          setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
+        }
+      } catch (error) {
+        console.error('Image processing failed:', error);
+      }
     }
     e.target.value = '';
   };

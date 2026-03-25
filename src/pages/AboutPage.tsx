@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, Heart, Coffee } from 'lucide-react';
+import { ChevronLeft, Info, Heart } from 'lucide-react';
 
 const AboutPage = () => {
   const navigate = useNavigate();
@@ -21,9 +21,6 @@ const AboutPage = () => {
       <div className="p-8 space-y-12">
         {/* App Info */}
         <div className="text-center space-y-4">
-          <div className="w-24 h-24 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto text-primary shadow-lg shadow-primary/10">
-            <Coffee size={48} />
-          </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold serif text-foreground">Foodaily</h1>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">V0 测试版</p>
