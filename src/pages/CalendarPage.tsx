@@ -108,7 +108,7 @@ const CalendarPage = () => {
         <div className="flex gap-6">
           {data.categories.map(cat => (
             <div key={cat.id} className="flex flex-col">
-              <span className="text-lg font-bold text-foreground">{String(stats[cat.name] || 0).padStart(2, '0')}</span>
+              <span className="text-lg font-bold text-foreground">{stats[cat.name] || 0}</span>
               <span className="text-[10px] text-muted-foreground font-medium">{cat.name}</span>
             </div>
           ))}

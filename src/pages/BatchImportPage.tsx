@@ -31,7 +31,7 @@ interface BatchItem {
 }
 
 const BatchImportPage = () => {
-  const { data, addRecord } = useApp();
+  const { data, batchAddRecords } = useApp();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -49,6 +49,14 @@ const BatchImportPage = () => {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     if (files.length === 0) return;
+
+    if (files.length > 20) {
+      alert('一次最多只能导入 20 张照片，请重新选择');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
 
     const newItems: BatchItem[] = files.map(file => ({
       id: crypto.randomUUID(),
@@ -121,8 +129,8 @@ const BatchImportPage = () => {
 
     setIsSaving(true);
     try {
-      for (const item of items) {
-        await addRecord({
+      const batchItems = items.map(item => ({
+        record: {
           workId: '',
           date: item.date,
           mainImage: item.preview,
@@ -131,13 +139,16 @@ const BatchImportPage = () => {
           evaluation: '',
           notes: '',
           extraImages: []
-        }, {
+        },
+        workInfo: {
           name: item.name || `未命名记录 (${item.date})`,
           categoryId: item.categoryId,
           coverImage: item.preview,
           isEmoji: false
-        });
-      }
+        }
+      }));
+
+      batchAddRecords(batchItems);
       navigate('/');
     } catch (error) {
       console.error('Failed to save batch:', error);
@@ -187,7 +198,7 @@ const BatchImportPage = () => {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-sm font-bold text-foreground">点击选择多张照片</p>
-                <p className="text-xs text-muted-foreground">支持一次最多 50 张</p>
+                <p className="text-xs text-muted-foreground">支持一次最多 20 张</p>
               </div>
               <input 
                 type="file" 

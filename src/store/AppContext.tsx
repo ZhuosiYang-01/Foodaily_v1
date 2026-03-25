@@ -11,14 +11,17 @@ interface AppContextType {
   moveWorksToCategory: (fromCategoryId: string, toCategoryId: string) => void;
   reorderCategories: (categories: Category[]) => void;
   addRecord: (record: Omit<RecordEntry, 'id' | 'createdAt'>, workInfo: { name: string; categoryId: string; coverImage: string; isEmoji: boolean }) => string;
+  batchAddRecords: (items: { record: Omit<RecordEntry, 'id' | 'createdAt'>, workInfo: { name: string; categoryId: string; coverImage: string; isEmoji: boolean } }[]) => void;
   updateRecord: (id: string, record: Partial<RecordEntry>, workInfo?: { name: string; categoryId: string }) => void;
   deleteRecord: (id: string) => void;
   updateWork: (id: string, work: Partial<Work>) => void;
   deleteWork: (id: string) => void;
+  batchDeleteWorks: (ids: string[]) => void;
+  batchMoveWorks: (workIds: string[], toCategoryId: string) => void;
   restoreLastDeleted: () => void;
   finalizeDelete: () => void;
   isUndoVisible: boolean;
-  undoType: 'record' | 'work' | 'category' | null;
+  undoType: 'record' | 'work' | 'category' | 'works' | null;
   getMonthlyStats: (year: number, month: number) => MonthlyStats;
   search: (query: string) => { works: Work[]; records: RecordEntry[] };
   loadDemoData: () => void;
@@ -261,6 +264,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return recordId;
   };
 
+  const batchAddRecords = (items: { record: Omit<RecordEntry, 'id' | 'createdAt'>, workInfo: { name: string; categoryId: string; coverImage: string; isEmoji: boolean } }[]) => {
+    const now = Date.now();
+
+    setData(prev => {
+      let updatedWorks = [...prev.works];
+      let newRecords: RecordEntry[] = [];
+
+      for (const item of items) {
+        const { record, workInfo } = item;
+        const recordId = typeof crypto.randomUUID === 'function' 
+          ? crypto.randomUUID() 
+          : Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+        let workId = record.workId;
+
+        if (!workId) {
+          const existingWork = updatedWorks.find(w => w.name === workInfo.name && w.categoryId === workInfo.categoryId);
+          if (existingWork) {
+            workId = existingWork.id;
+          } else {
+            workId = typeof crypto.randomUUID === 'function' 
+              ? crypto.randomUUID() 
+              : Math.random().toString(36).substring(2) + Date.now().toString(36);
+            updatedWorks.push({
+              id: workId,
+              categoryId: workInfo.categoryId,
+              name: workInfo.name,
+              coverImage: workInfo.coverImage,
+              isEmojiCover: workInfo.isEmoji,
+              isManualCover: false,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
+        }
+
+        newRecords.push({
+          ...record,
+          id: recordId,
+          workId,
+          createdAt: now,
+        });
+      }
+
+      const allRecords = [...newRecords, ...prev.records];
+      const affectedWorkIds = new Set(newRecords.map(r => r.workId));
+
+      updatedWorks = updatedWorks.map(w => {
+        if (affectedWorkIds.has(w.id)) {
+          const updatedWork = { ...w, updatedAt: now };
+          if (!w.isManualCover) {
+            const workRecords = allRecords.filter(r => r.workId === w.id);
+            const latestRecord = [...workRecords].sort((a, b) => {
+              const dateDiff = b.date.localeCompare(a.date);
+              if (dateDiff !== 0) return dateDiff;
+              return b.createdAt - a.createdAt;
+            })[0];
+            if (latestRecord) {
+              updatedWork.coverImage = latestRecord.mainImage;
+              updatedWork.isEmojiCover = latestRecord.isEmojiMain;
+            }
+          }
+          return updatedWork;
+        }
+        return w;
+      });
+
+      return {
+        ...prev,
+        works: updatedWorks,
+        records: allRecords,
+      };
+    });
+
+    localStorage.setItem(INITIALIZED_KEY, 'true');
+  };
+
   const updateRecord = (id: string, record: Partial<RecordEntry>, workInfo?: { name: string; categoryId: string }) => {
     setData(prev => {
       let updatedRecords = [...prev.records];
@@ -331,14 +411,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const [lastDeleted, setLastDeleted] = useState<{ 
-    type: 'record' | 'work' | 'category'; 
+    type: 'record' | 'work' | 'category' | 'works'; 
     data: any; 
     relatedRecords?: RecordEntry[]; 
     relatedWork?: Work;
     relatedWorks?: Work[];
   } | null>(null);
   const [isUndoVisible, setIsUndoVisible] = useState(false);
-  const [undoType, setUndoType] = useState<'record' | 'work' | 'category' | null>(null);
+  const [undoType, setUndoType] = useState<'record' | 'work' | 'category' | 'works' | null>(null);
 
   const deleteRecord = (id: string) => {
     const recordToDelete = data.records.find(r => r.id === id);
@@ -428,6 +508,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
+  const batchDeleteWorks = (ids: string[]) => {
+    const worksToDelete = data.works.filter(w => ids.includes(w.id));
+    if (worksToDelete.length === 0) return;
+
+    const relatedRecords = data.records.filter(r => ids.includes(r.workId));
+    
+    setLastDeleted({ type: 'works', data: worksToDelete, relatedRecords });
+    setUndoType('works');
+    setIsUndoVisible(true);
+
+    setData(prev => ({
+      ...prev,
+      works: prev.works.filter(w => !ids.includes(w.id)),
+      records: prev.records.filter(r => !ids.includes(r.workId)),
+    }));
+  };
+
+  const batchMoveWorks = (workIds: string[], toCategoryId: string) => {
+    setData(prev => ({
+      ...prev,
+      works: prev.works.map(w => workIds.includes(w.id) ? { ...w, categoryId: toCategoryId } : w)
+    }));
+  };
+
   const restoreLastDeleted = () => {
     if (!lastDeleted) return;
 
@@ -490,6 +594,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return {
           ...prev,
           categories: [...prev.categories, restoredCategory],
+          works: [...prev.works, ...restoredWorks],
+          records: [...prev.records, ...restoredRecords]
+        };
+      } else if (lastDeleted.type === 'works') {
+        const restoredWorks = lastDeleted.data as Work[];
+        const restoredRecords = lastDeleted.relatedRecords || [];
+        
+        return {
+          ...prev,
           works: [...prev.works, ...restoredWorks],
           records: [...prev.records, ...restoredRecords]
         };
@@ -585,10 +698,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteCategory,
       reorderCategories,
       addRecord,
+      batchAddRecords,
       updateRecord,
       deleteRecord,
       updateWork,
       deleteWork,
+      batchDeleteWorks,
+      batchMoveWorks,
       restoreLastDeleted,
       finalizeDelete,
       isUndoVisible,

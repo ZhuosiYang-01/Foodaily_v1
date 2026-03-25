@@ -1,21 +1,28 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, ArrowUpDown, History, Star, Calendar } from 'lucide-react';
+import { ChevronLeft, ArrowUpDown, History, Star, Calendar, CheckCircle2, Circle, Trash2, FolderInput, X } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn, formatDate } from '@/lib/utils';
 
 type SortType = 'recent' | 'most_frequent' | 'first_time';
 
 const CategoryDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { data } = useApp();
+  const { data, batchDeleteWorks, batchMoveWorks } = useApp();
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<SortType>(() => {
     const saved = sessionStorage.getItem(`sort_pref_${id}`);
     return (saved as SortType) || 'recent';
   });
+
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedWorkIds, setSelectedWorkIds] = useState<string[]>([]);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [targetCategoryId, setTargetCategoryId] = useState<string>('');
 
   const handleSortChange = (value: SortType) => {
     setSortBy(value);
@@ -52,19 +59,62 @@ const CategoryDetailPage = () => {
     }
   }, [worksWithStats, sortBy]);
 
+  const toggleSelection = (workId: string) => {
+    setSelectedWorkIds(prev => 
+      prev.includes(workId) ? prev.filter(id => id !== workId) : [...prev, workId]
+    );
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedWorkIds.length === 0) return;
+    if (window.confirm(`确定要删除选中的 ${selectedWorkIds.length} 个作品吗？`)) {
+      batchDeleteWorks(selectedWorkIds);
+      setIsSelectionMode(false);
+      setSelectedWorkIds([]);
+    }
+  };
+
+  const handleBatchMove = () => {
+    if (selectedWorkIds.length === 0 || !targetCategoryId) return;
+    batchMoveWorks(selectedWorkIds, targetCategoryId);
+    setIsMoveDialogOpen(false);
+    setIsSelectionMode(false);
+    setSelectedWorkIds([]);
+    setTargetCategoryId('');
+  };
+
   if (!category) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300">
+    <div className="min-h-screen bg-background pb-24 animate-in slide-in-from-right duration-300 pt-[72px]">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
-        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
-          <ChevronLeft size={24} />
-        </button>
-        <h2 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
-          <span>{category.icon}</span> {category.name}
-        </h2>
-        <div className="w-10" />
+      <header className="fixed top-0 left-0 right-0 flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-md z-50">
+        {isSelectionMode ? (
+          <>
+            <button onClick={() => { setIsSelectionMode(false); setSelectedWorkIds([]); }} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
+              <X size={24} />
+            </button>
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-widest">
+              已选择 {selectedWorkIds.length} 项
+            </h2>
+            <div className="w-10" />
+          </>
+        ) : (
+          <>
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
+              <ChevronLeft size={24} />
+            </button>
+            <h2 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
+              <span>{category.icon}</span> {category.name}
+            </h2>
+            <button 
+              onClick={() => setIsSelectionMode(true)} 
+              className="text-xs font-bold text-primary uppercase tracking-widest"
+            >
+              选择
+            </button>
+          </>
+        )}
       </header>
 
       <div className="p-6 space-y-6">
@@ -88,29 +138,51 @@ const CategoryDetailPage = () => {
         {/* Works Grid */}
         {sortedWorks.length > 0 ? (
           <div className="grid grid-cols-3 gap-3">
-            {sortedWorks.map(work => (
-              <Link 
-                key={work.id} 
-                to={`/work/${work.id}`}
-                className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col"
-              >
-                <div className="aspect-square bg-muted/30 relative overflow-hidden">
-                  {work.isEmojiCover ? (
-                    <div className="w-full h-full flex items-center justify-center text-4xl">{work.coverImage}</div>
-                  ) : (
-                    <img src={work.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+            {sortedWorks.map(work => {
+              const isSelected = selectedWorkIds.includes(work.id);
+              return (
+                <div 
+                  key={work.id} 
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      toggleSelection(work.id);
+                    } else {
+                      navigate(`/work/${work.id}`);
+                    }
+                  }}
+                  className={cn(
+                    "bg-card rounded-2xl border shadow-sm overflow-hidden transition-all group flex flex-col cursor-pointer relative",
+                    isSelected ? "border-primary ring-2 ring-primary/20" : "border-border hover:shadow-md"
                   )}
+                >
+                  {isSelectionMode && (
+                    <div className="absolute top-2 right-2 z-10">
+                      {isSelected ? (
+                        <CheckCircle2 size={20} className="text-primary fill-primary/20" />
+                      ) : (
+                        <Circle size={20} className="text-white drop-shadow-md" />
+                      )}
+                    </div>
+                  )}
+                  <div className="aspect-square bg-muted/30 relative overflow-hidden">
+                    {work.isEmojiCover ? (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">{work.coverImage}</div>
+                    ) : (
+                      <img src={work.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    )}
+                    {isSelectionMode && <div className="absolute inset-0 bg-black/10" />}
+                  </div>
+                  <div className="p-2 space-y-0.5 text-center">
+                    <h4 className="text-[10px] font-bold text-foreground truncate">{work.name}</h4>
+                    <p className="text-[8px] text-muted-foreground font-bold">
+                      {sortBy === 'recent' && (work.recentDate ? formatDate(work.recentDate) : '暂无')}
+                      {sortBy === 'most_frequent' && `已做 ${work.recordCount} 次`}
+                      {sortBy === 'first_time' && (work.firstDate ? formatDate(work.firstDate) : '暂无')}
+                    </p>
+                  </div>
                 </div>
-                <div className="p-2 space-y-0.5 text-center">
-                  <h4 className="text-[10px] font-bold text-foreground truncate">{work.name}</h4>
-                  <p className="text-[8px] text-muted-foreground font-bold">
-                    {sortBy === 'recent' && (work.recentDate ? formatDate(work.recentDate) : '暂无')}
-                    {sortBy === 'most_frequent' && `已做 ${work.recordCount} 次`}
-                    {sortBy === 'first_time' && (work.firstDate ? formatDate(work.firstDate) : '暂无')}
-                  </p>
-                </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-24 bg-muted/20 rounded-3xl border border-dashed border-border">
@@ -118,6 +190,57 @@ const CategoryDetailPage = () => {
           </div>
         )}
       </div>
+
+      {/* Selection Action Bar */}
+      {isSelectionMode && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-md border-t border-border z-20 animate-in slide-in-from-bottom flex gap-3">
+          <Button 
+            variant="outline"
+            className="flex-1 rounded-2xl h-12 text-xs font-bold uppercase tracking-widest border-destructive/20 text-destructive hover:bg-destructive/10"
+            onClick={handleBatchDelete}
+            disabled={selectedWorkIds.length === 0}
+          >
+            <Trash2 size={16} className="mr-2" /> 删除
+          </Button>
+          <Button 
+            className="flex-1 rounded-2xl h-12 text-xs font-bold uppercase tracking-widest"
+            onClick={() => setIsMoveDialogOpen(true)}
+            disabled={selectedWorkIds.length === 0}
+          >
+            <FolderInput size={16} className="mr-2" /> 转移分类
+          </Button>
+        </div>
+      )}
+
+      {/* Move Dialog */}
+      <Dialog open={isMoveDialogOpen} onOpenChange={setIsMoveDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] rounded-[2rem] p-6">
+          <DialogHeader>
+            <DialogTitle className="text-center serif text-xl">转移至新分类</DialogTitle>
+          </DialogHeader>
+          <div className="py-6">
+            <Select value={targetCategoryId} onValueChange={setTargetCategoryId}>
+              <SelectTrigger className="w-full h-12 rounded-2xl bg-card border-border text-sm font-bold">
+                <SelectValue placeholder="选择目标分类" />
+              </SelectTrigger>
+              <SelectContent className="z-[110]">
+                {data.categories.filter(c => c.id !== id).map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.icon} {cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={handleBatchMove} 
+              disabled={!targetCategoryId}
+              className="w-full rounded-2xl h-12 text-sm font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
+            >
+              确认转移
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

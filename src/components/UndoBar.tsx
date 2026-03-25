@@ -9,7 +9,8 @@ const UndoBar = () => {
   const typeLabels = {
     record: '记录',
     work: '作品',
-    category: '分类'
+    category: '分类',
+    works: '多个作品'
   };
 
   return (
