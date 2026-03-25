@@ -7,7 +7,7 @@ import ExifReader from 'exifreader';
 export async function compressImage(
   source: string | File,
   maxWidth = 1080,
-  quality = 0.7
+  quality = 0.95
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -50,6 +50,53 @@ export async function compressImage(
       reader.onerror = (err) => reject(err);
       reader.readAsDataURL(source);
     }
+  });
+}
+
+export async function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number },
+  maxWidth = 1080,
+  quality = 0.7
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      
+      let targetWidth = pixelCrop.width;
+      let targetHeight = pixelCrop.height;
+      
+      if (targetWidth > maxWidth) {
+        targetHeight = (targetHeight * maxWidth) / targetWidth;
+        targetWidth = maxWidth;
+      }
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        reject(new Error('No 2d context'));
+        return;
+      }
+
+      ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        targetWidth,
+        targetHeight
+      );
+
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    image.onerror = (e) => reject(e);
+    image.src = imageSrc;
   });
 }
 

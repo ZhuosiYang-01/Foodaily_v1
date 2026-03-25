@@ -19,16 +19,6 @@ const RecordDetailPage = () => {
   const work = useMemo(() => data.works.find(w => w.id === record?.workId), [record, data.works]);
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
 
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Give it a tiny bit of time to settle if it's a new record
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [id]);
-
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -37,7 +27,7 @@ const RecordDetailPage = () => {
     if (!record) return [];
     const images = [];
     if (!record.isEmojiMain && record.mainImage) {
-      images.push(record.mainImage);
+      images.push(record.originalMainImage || record.mainImage);
     }
     if (record.extraImages && record.extraImages.length > 0) {
       images.push(...record.extraImages);
@@ -49,15 +39,6 @@ const RecordDetailPage = () => {
     setViewerIndex(index);
     setViewerOpen(true);
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
-        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">正在加载记录...</p>
-      </div>
-    );
-  }
 
   if (!record) return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 text-center space-y-4">
@@ -78,7 +59,7 @@ const RecordDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 animate-in fade-in duration-500">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header Image */}
       <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
         <button 

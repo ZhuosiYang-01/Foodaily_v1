@@ -8,7 +8,8 @@ import {
   Calendar, 
   Tag, 
   Type,
-  AlertCircle
+  AlertCircle,
+  Scissors
 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { compressImage, extractPhotoDate } from '../lib/imageUtils';
+import ImageCropperModal from '../components/ImageCropperModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +43,7 @@ const BatchImportPage = () => {
   const [batchCategory, setBatchCategory] = useState<string>('');
   const [guideStep, setGuideStep] = useState<number>(0); // 0: none, 1: batch cat, 2: name, 3: limits
   const [isSaving, setIsSaving] = useState(false);
+  const [cropTarget, setCropTarget] = useState<{ id: string, src: string } | null>(null);
 
   // Refs for guide positioning
   const batchCatRef = useRef<HTMLDivElement>(null);
@@ -75,7 +78,7 @@ const BatchImportPage = () => {
     for (const item of newItems) {
       try {
         const date = await extractPhotoDate(item.file);
-        const compressed = await compressImage(item.file, 1080, 0.7);
+        const compressed = await compressImage(item.file, 1080, 0.95);
         
         setItems(prev => prev.map(i => i.id === item.id ? {
           ...i,
@@ -268,13 +271,21 @@ const BatchImportPage = () => {
 
                       <div className="flex gap-4 items-start">
                         {/* Preview */}
-                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-muted flex-shrink-0 relative mt-1">
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-muted flex-shrink-0 relative mt-1 group">
                           {item.isProcessing ? (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/5">
                               <Loader2 size={24} className="animate-spin text-primary" />
                             </div>
                           ) : (
-                            <img src={item.preview} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            <>
+                              <img src={item.preview} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              <button 
+                                onClick={() => setCropTarget({ id: item.id, src: item.preview })}
+                                className="absolute bottom-1 right-1 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
+                              >
+                                <Scissors size={12} />
+                              </button>
+                            </>
                           )}
                         </div>
 
@@ -418,6 +429,18 @@ const BatchImportPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cropper Modal */}
+      {cropTarget && (
+        <ImageCropperModal
+          isOpen={!!cropTarget}
+          imageSrc={cropTarget.src}
+          onClose={() => setCropTarget(null)}
+          onCropComplete={(croppedBase64) => {
+            updateItem(cropTarget.id, { preview: croppedBase64 });
+          }}
+        />
+      )}
     </div>
   );
 };

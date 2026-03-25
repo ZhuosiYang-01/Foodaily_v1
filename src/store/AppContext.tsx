@@ -189,7 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addRecord = (
     record: Omit<RecordEntry, 'id' | 'createdAt'>,
-    workInfo: { name: string; categoryId: string; coverImage: string; isEmoji: boolean }
+    workInfo: { name: string; categoryId: string; coverImage: string; originalCoverImage?: string; isEmoji: boolean }
   ) => {
     const recordId = typeof crypto.randomUUID === 'function' 
       ? crypto.randomUUID() 
@@ -216,6 +216,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             categoryId: workInfo.categoryId,
             name: workInfo.name,
             coverImage: workInfo.coverImage,
+            originalCoverImage: workInfo.originalCoverImage,
             isEmojiCover: workInfo.isEmoji,
             isManualCover: false,
             createdAt: now,
@@ -246,6 +247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const updatedWork = { ...w, updatedAt: now };
           if (!w.isManualCover && latestRecord) {
             updatedWork.coverImage = latestRecord.mainImage;
+            updatedWork.originalCoverImage = latestRecord.originalMainImage;
             updatedWork.isEmojiCover = latestRecord.isEmojiMain;
           }
           return updatedWork;
@@ -323,6 +325,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             })[0];
             if (latestRecord) {
               updatedWork.coverImage = latestRecord.mainImage;
+              updatedWork.originalCoverImage = latestRecord.originalMainImage;
               updatedWork.isEmojiCover = latestRecord.isEmojiMain;
             }
           }
@@ -367,6 +370,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             categoryId: workInfo.categoryId,
             name: workInfo.name,
             coverImage: record.mainImage || recordToUpdate.mainImage,
+            originalCoverImage: record.originalMainImage || recordToUpdate.originalMainImage,
             isEmojiCover: record.isEmojiMain ?? recordToUpdate.isEmojiMain,
             isManualCover: false,
             createdAt: now,
@@ -394,6 +398,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             
             if (latestRecord) {
               updatedWork.coverImage = latestRecord.mainImage;
+              updatedWork.originalCoverImage = latestRecord.originalMainImage;
               updatedWork.isEmojiCover = latestRecord.isEmojiMain;
             }
           }
@@ -459,6 +464,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             updatedWorks = prev.works.map(w => w.id === workId ? {
               ...w,
               coverImage: latestRecord.mainImage,
+              originalCoverImage: latestRecord.originalMainImage,
               isEmojiCover: latestRecord.isEmojiMain
             } : w);
           }
@@ -565,6 +571,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               return {
                 ...w,
                 coverImage: latestRecord.mainImage,
+                originalCoverImage: latestRecord.originalMainImage,
                 isEmojiCover: latestRecord.isEmojiMain
               };
             }

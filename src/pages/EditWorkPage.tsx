@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Camera, Smile, X } from 'lucide-react';
+import { ChevronLeft, Camera, Smile, X, Scissors } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EmojiPicker from '../components/EmojiPicker';
+import ImageCropperModal from '../components/ImageCropperModal';
 
 const EditWorkPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,15 +22,18 @@ const EditWorkPage = () => {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [coverImage, setCoverImage] = useState('');
+  const [originalCoverImage, setOriginalCoverImage] = useState<string | undefined>();
   const [isEmojiCover, setIsEmojiCover] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+  const [cropTarget, setCropTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (work) {
       setName(work.name);
       setCategoryId(work.categoryId);
       setCoverImage(work.coverImage);
+      setOriginalCoverImage(work.originalCoverImage);
       setIsEmojiCover(work.isEmojiCover);
     }
   }, [work]);
@@ -39,8 +43,11 @@ const EditWorkPage = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setCoverImage(reader.result as string);
+        const result = reader.result as string;
+        setCoverImage(result);
+        setOriginalCoverImage(result);
         setIsEmojiCover(false);
+        setCropTarget(result);
       };
       reader.readAsDataURL(file);
     }
@@ -52,7 +59,9 @@ const EditWorkPage = () => {
       name,
       categoryId,
       coverImage,
+      originalCoverImage,
       isEmojiCover,
+      isManualCover: true,
       updatedAt: Date.now(),
     });
     navigate(-1);
@@ -155,18 +164,29 @@ const EditWorkPage = () => {
             />
             
             {coverImage && (
-              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
+              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border group">
                 {isEmojiCover ? (
                   <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{coverImage}</div>
                 ) : (
                   <img src={coverImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 )}
-                <button 
-                  onClick={() => setCoverImage('')}
-                  className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
-                >
-                  <X size={16} />
-                </button>
+                
+                <div className="absolute top-2 right-2 flex gap-2">
+                  {!isEmojiCover && (
+                    <button 
+                      onClick={() => setCropTarget(coverImage)}
+                      className="bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <Scissors size={16} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setCoverImage('')}
+                    className="bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -181,6 +201,18 @@ const EditWorkPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Cropper Modal */}
+      {cropTarget && (
+        <ImageCropperModal
+          isOpen={!!cropTarget}
+          imageSrc={cropTarget}
+          onClose={() => setCropTarget(null)}
+          onCropComplete={(croppedBase64) => {
+            setCoverImage(croppedBase64);
+          }}
+        />
+      )}
     </div>
   );
 };

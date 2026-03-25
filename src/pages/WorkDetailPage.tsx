@@ -28,7 +28,7 @@ const WorkDetailPage = () => {
 
   const coverImages = useMemo(() => {
     if (!work || work.isEmojiCover || !work.coverImage) return [];
-    return [work.coverImage];
+    return [work.originalCoverImage || work.coverImage];
   }, [work]);
 
   const handleDeleteWork = () => {
@@ -40,7 +40,7 @@ const WorkDetailPage = () => {
   if (!work) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-24 animate-in fade-in duration-500">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header Image */}
       <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
         <button 

@@ -11,6 +11,7 @@ export type Work = {
   categoryId: string;
   name: string;
   coverImage: string; // 图片 URL 或 base64 或 emoji
+  originalCoverImage?: string; // 裁剪前的原图
   isEmojiCover: boolean;
   isManualCover?: boolean; // 是否手动设置了封面
   createdAt: number;
@@ -26,6 +27,7 @@ export type RecordEntry = {
   evaluation: string; // 评价
   notes: string; // 备忘
   mainImage: string;
+  originalMainImage?: string; // 裁剪前的原图
   isEmojiMain: boolean;
   extraImages: string[];
   createdAt: number;

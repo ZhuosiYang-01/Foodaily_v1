@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Camera, Smile, X, PlusCircle } from 'lucide-react';
+import { ChevronLeft, Camera, Smile, X, PlusCircle, Scissors } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import EmojiPicker from '../components/EmojiPicker';
+import ImageCropperModal from '../components/ImageCropperModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { compressImage, extractPhotoDate } from '../lib/imageUtils';
 
@@ -30,10 +31,12 @@ const EditRecordPage = () => {
   const [evaluation, setEvaluation] = useState('');
   const [notes, setNotes] = useState('');
   const [mainImage, setMainImage] = useState('');
+  const [originalMainImage, setOriginalMainImage] = useState<string | undefined>();
   const [isEmojiMain, setIsEmojiMain] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [extraImages, setExtraImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [cropTarget, setCropTarget] = useState<{ type: 'main' | 'extra', index?: number, src: string } | null>(null);
 
   useEffect(() => {
     if (record) {
@@ -45,6 +48,7 @@ const EditRecordPage = () => {
       setEvaluation(record.evaluation);
       setNotes(record.notes);
       setMainImage(record.mainImage);
+      setOriginalMainImage(record.originalMainImage);
       setIsEmojiMain(record.isEmojiMain);
       setExtraImages(record.extraImages || []);
     }
@@ -64,11 +68,13 @@ const EditRecordPage = () => {
           }
         }
 
-        const compressedDataUrl = await compressImage(file, 1080, 0.7);
+        const compressedDataUrl = await compressImage(file, 1080, 0.95);
         
         if (isMain) {
           setMainImage(compressedDataUrl);
+          setOriginalMainImage(compressedDataUrl);
           setIsEmojiMain(false);
+          setCropTarget({ type: 'main', src: compressedDataUrl });
         } else {
           setExtraImages(prev => [...prev, compressedDataUrl].slice(0, 2));
         }
@@ -91,6 +97,7 @@ const EditRecordPage = () => {
         evaluation,
         notes,
         mainImage,
+        originalMainImage,
         isEmojiMain,
         extraImages,
       }, {
@@ -191,33 +198,35 @@ const EditRecordPage = () => {
 
           <div className="space-y-2">
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">封面图 *</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="relative">
-                <button
-                  type="button"
-                  className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
-                  onClick={() => fileInputRef.current?.click()}
+            {!mainImage && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                  <button
+                    type="button"
+                    className="w-full aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
+                  </button>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={(e) => handleImageUpload(e, true)} 
+                  />
+                </div>
+                
+                <button 
+                  onClick={() => setIsEmojiPickerOpen(true)}
+                  className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
                 >
-                  <Camera size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors" />
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">上传照片</span>
+                  <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
                 </button>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  onChange={(e) => handleImageUpload(e, true)} 
-                />
               </div>
-              
-              <button 
-                onClick={() => setIsEmojiPickerOpen(true)}
-                className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-border hover:border-primary/30 hover:bg-primary/5 transition-all group bg-card"
-              >
-                <Smile size={32} className="text-muted-foreground/40 group-hover:text-primary transition-colors mb-2" />
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">选择 Emoji</span>
-              </button>
-            </div>
+            )}
 
             <EmojiPicker
               isOpen={isEmojiPickerOpen}
@@ -230,18 +239,29 @@ const EditRecordPage = () => {
             />
             
             {mainImage && (
-              <div className="mt-4 relative aspect-video rounded-2xl overflow-hidden shadow-sm border border-border">
+              <div className="mt-4 relative aspect-square rounded-2xl overflow-hidden shadow-sm border border-border group">
                 {isEmojiMain ? (
                   <div className="w-full h-full flex items-center justify-center text-7xl bg-muted/30">{mainImage}</div>
                 ) : (
                   <img src={mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 )}
-                <button 
-                  onClick={() => setMainImage('')}
-                  className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
-                >
-                  <X size={16} />
-                </button>
+                
+                <div className="absolute top-2 right-2 flex gap-2">
+                  {!isEmojiMain && (
+                    <button 
+                      onClick={() => setCropTarget({ type: 'main', src: mainImage })}
+                      className="bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <Scissors size={16} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setMainImage('')}
+                    className="bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -270,14 +290,22 @@ const EditRecordPage = () => {
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">其他照片 (最多 2 张)</Label>
             <div className="grid grid-cols-3 gap-3">
               {extraImages.map((img, idx) => (
-                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-border">
+                <div key={idx} className="relative aspect-square rounded-xl overflow-hidden shadow-sm border border-border group">
                   <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  <button 
-                    onClick={() => setExtraImages(prev => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full"
-                  >
-                    <X size={12} />
-                  </button>
+                  <div className="absolute top-1 right-1 flex gap-1">
+                    <button 
+                      onClick={() => setCropTarget({ type: 'extra', index: idx, src: img })}
+                      className="bg-black/50 text-white p-1 rounded-full"
+                    >
+                      <Scissors size={12} />
+                    </button>
+                    <button 
+                      onClick={() => setExtraImages(prev => prev.filter((_, i) => i !== idx))}
+                      className="bg-black/50 text-white p-1 rounded-full"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 </div>
               ))}
                   {extraImages.length < 2 && (
@@ -299,6 +327,26 @@ const EditRecordPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Cropper Modal */}
+      {cropTarget && (
+        <ImageCropperModal
+          isOpen={!!cropTarget}
+          imageSrc={cropTarget.src}
+          onClose={() => setCropTarget(null)}
+          onCropComplete={(croppedBase64) => {
+            if (cropTarget.type === 'main') {
+              setMainImage(croppedBase64);
+            } else if (cropTarget.type === 'extra' && cropTarget.index !== undefined) {
+              setExtraImages(prev => {
+                const newExtra = [...prev];
+                newExtra[cropTarget.index!] = croppedBase64;
+                return newExtra;
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

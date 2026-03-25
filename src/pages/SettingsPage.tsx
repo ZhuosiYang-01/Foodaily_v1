@@ -123,8 +123,7 @@ const SettingsPage = () => {
 
       {/* Footer Info */}
       <footer className="text-center pt-8 space-y-1">
-        <p className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">Foodaily V0 测试版</p>
-        <p className="text-[10px] text-muted-foreground/50">Made with ❤️ for food lovers</p>
+        <p className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">Foodaily Version 1.0</p>
       </footer>
 
       {/* Custom Modals & Toasts */}
