@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, LayoutGrid, Edit3 } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Edit3, BarChart2 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 
@@ -29,13 +29,14 @@ const CategoriesPage = () => {
       {/* Header */}
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <LayoutGrid size={24} className="text-primary" /> 分类
+          <LayoutGrid size={24} className="text-primary" /> 作品
         </h1>
-        <button 
-          onClick={() => navigate('/settings/categories')}
-          className="text-xs font-bold text-primary uppercase tracking-widest flex items-center gap-1 hover:underline"
+        <button
+          onClick={() => navigate('/stats')}
+          className="flex items-center gap-1.5 bg-primary/10 text-primary rounded-full px-3 py-1.5 text-xs font-bold hover:bg-primary/20 transition-colors"
         >
-          <Edit3 size={14} /> 编辑分类
+          <BarChart2 size={13} />
+          烹饪报告
         </button>
       </header>
 
@@ -81,9 +82,17 @@ const CategoriesPage = () => {
         ))}
       </div>
 
-      <p className="text-center text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest pb-4">
-        共 {data.works.length} 个作品 · 累计记录 {data.records.length} 次
-      </p>
+      <div className="flex flex-col items-center gap-3 pb-4">
+        <button
+          onClick={() => navigate('/settings/categories')}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Edit3 size={12} /> 编辑分类
+        </button>
+        <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+          共 {data.works.length} 个作品 · 累计记录 {data.records.length} 次
+        </p>
+      </div>
     </div>
   );
 };

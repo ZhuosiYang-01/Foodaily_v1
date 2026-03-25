@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 const BottomNav = () => {
   const navItems = [
     { to: '/', icon: Home, label: '首页' },
-    { to: '/categories', icon: LayoutGrid, label: '分类' },
+    { to: '/categories', icon: LayoutGrid, label: '作品' },
     { to: '/new-record', icon: PlusCircle, label: '新增', isMain: true },
     { to: '/calendar', icon: Calendar, label: '日历' },
     { to: '/settings', icon: User, label: '设置' },
