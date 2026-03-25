@@ -37,9 +37,10 @@ const DayRecordsPage = () => {
             {records.map(record => {
               const work = data.works.find(w => w.id === record.workId);
               return (
-                <Link 
-                  key={record.id} 
+                <Link
+                  key={record.id}
                   to={`/record/${record.id}`}
+                  state={{ backTo: `/day-records?date=${date}` }}
                   className="bg-card rounded-3xl border border-border/50 shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
                 >
                   <div className="aspect-video bg-muted/30 relative overflow-hidden">

@@ -113,9 +113,10 @@ const HomePage = () => {
                 {cat.records.map(record => {
                   const work = data.works.find(w => w.id === record.workId);
                   return (
-                    <Link 
-                      key={record.id} 
+                    <Link
+                      key={record.id}
                       to={`/record/${record.id}`}
+                      state={{ backTo: '/' }}
                       className="flex-shrink-0 w-[30%] snap-start group bg-card rounded-2xl p-1.5 border border-border/50 shadow-sm hover:shadow-md transition-all"
                     >
                       <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-2 relative group-hover:shadow-sm transition-shadow">

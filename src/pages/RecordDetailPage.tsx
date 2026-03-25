@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Edit3, Trash2, Calendar, Star, StickyNote, Image as ImageIcon, ArrowRight, RotateCcw } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Edit3, Trash2, Calendar, Star, StickyNote, Image as ImageIcon, ArrowRight, RotateCcw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,15 @@ const RecordDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { data, deleteRecord, restoreLastDeleted } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  const fromWorkId = (location.state as any)?.fromWorkId as string | undefined;
+  const recordIds = (location.state as any)?.recordIds as string[] | undefined;
+  const backTo = (location.state as any)?.backTo as string | undefined;
+  const currentIndex = recordIds ? recordIds.indexOf(id!) : -1;
+  const prevId = currentIndex > 0 ? recordIds![currentIndex - 1] : null;
+  const nextId = currentIndex !== -1 && currentIndex < (recordIds?.length ?? 0) - 1 ? recordIds![currentIndex + 1] : null;
 
   const record = useMemo(() => data.records.find(r => r.id === id), [id, data.records]);
   const work = useMemo(() => data.works.find(w => w.id === record?.workId), [record, data.works]);
@@ -62,8 +70,16 @@ const RecordDetailPage = () => {
     <div className="min-h-screen bg-background pb-24">
       {/* Header Image */}
       <div className="relative aspect-square w-full bg-gray-100 overflow-hidden">
-        <button 
-          onClick={() => navigate(-1)} 
+        <button
+          onClick={() => {
+            if (fromWorkId) {
+              navigate(`/work/${fromWorkId}`, { state: { backTo } });
+            } else if (backTo) {
+              navigate(backTo);
+            } else {
+              navigate(-1);
+            }
+          }}
           className="absolute top-4 left-4 z-10 p-2 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/40 transition-colors"
         >
           <ChevronLeft size={24} />
@@ -84,28 +100,57 @@ const RecordDetailPage = () => {
         )}
         
         <div className="absolute top-4 right-4 z-10 flex gap-2">
-          <button 
-            onClick={() => navigate(`/edit-record/${record.id}`)} 
+          <button
+            onClick={() => navigate(`/edit-record/${record.id}`)}
             className="p-2 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/40 transition-colors"
           >
             <Edit3 size={20} />
           </button>
-          <button 
-            onClick={() => setShowConfirmDelete(true)} 
+          <button
+            onClick={() => setShowConfirmDelete(true)}
             className="p-2 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/40 transition-colors"
           >
             <Trash2 size={20} />
           </button>
         </div>
 
+        {/* Prev / Next record navigation (only when entering from WorkDetailPage) */}
+        {fromWorkId && (
+          <>
+            {prevId ? (
+              <button
+                onClick={() => navigate(`/record/${prevId}`, { state: { fromWorkId, recordIds, backTo } })}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-black/30 backdrop-blur-md text-white rounded-full hover:bg-black/50 transition-colors"
+              >
+                <ChevronLeft size={22} />
+              </button>
+            ) : null}
+            {nextId ? (
+              <button
+                onClick={() => navigate(`/record/${nextId}`, { state: { fromWorkId, recordIds, backTo } })}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-black/30 backdrop-blur-md text-white rounded-full hover:bg-black/50 transition-colors"
+              >
+                <ChevronRight size={22} />
+              </button>
+            ) : null}
+          </>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent text-white">
           <Badge variant="secondary" className="bg-primary text-white border-none mb-2 px-3 py-0.5 h-5 text-[10px] uppercase font-bold tracking-wider">
             {category?.name}
           </Badge>
           <h1 className="text-3xl font-bold serif leading-tight">{record.title}</h1>
-          <p className="text-sm opacity-80 mt-1 font-medium flex items-center gap-1.5">
-            <Calendar size={14} /> {formatDate(record.date)}
-          </p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-sm opacity-80 font-medium flex items-center gap-1.5">
+              <Calendar size={14} /> {formatDate(record.date)}
+            </p>
+            {fromWorkId && currentIndex !== -1 && (
+              <span className="text-[10px] text-white/60 font-bold">
+                {currentIndex + 1} / {recordIds!.length}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -165,8 +210,9 @@ const RecordDetailPage = () => {
             再做一次
           </Button>
 
-          <Link 
+          <Link
             to={`/work/${work?.id}`}
+            state={fromWorkId ? { backTo } : { fromRecordId: record.id, chainBackTo: backTo }}
             className="flex items-center justify-between w-full p-4 bg-card rounded-2xl group hover:bg-accent transition-colors border border-border/50"
           >
             <div className="flex items-center gap-3">

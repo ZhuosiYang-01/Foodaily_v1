@@ -150,7 +150,7 @@ const CategoryDetailPage = () => {
                     if (isSelectionMode) {
                       toggleSelection(work.id);
                     } else {
-                      navigate(`/work/${work.id}`);
+                      navigate(`/work/${work.id}`, { state: { backTo: `/category/${id}` } });
                     }
                   }}
                   className={cn(
