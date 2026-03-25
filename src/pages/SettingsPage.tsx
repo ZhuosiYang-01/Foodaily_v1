@@ -69,7 +69,7 @@ const SettingsPage = () => {
     { onClick: handleExport, icon: Download, label: '导出数据', color: 'text-green-500 bg-green-50' },
     { onClick: null, icon: Upload, label: '导入数据', color: 'text-orange-500 bg-orange-50', isFile: true },
     { onClick: () => setShowConfirmClear(true), icon: Trash2, label: '清空数据', color: 'text-red-500 bg-red-50' },
-    { to: '/about', icon: Info, label: '关于产品', color: 'text-gray-500 bg-gray-50' },
+    { to: '/about', icon: Info, label: '关于 Foodaily', color: 'text-gray-500 bg-gray-50' },
   ];
 
   return (
