@@ -122,7 +122,6 @@ export async function syncDataToSupabase(userId: string, data: AppData): Promise
     user_id: userId,
     name: c.name,
     icon: c.icon,
-    supports_taste: c.supportsTaste ?? false,
     order: c.order,
   }));
 
