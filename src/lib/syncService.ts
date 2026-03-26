@@ -51,7 +51,7 @@ export async function fetchDataFromSupabase(userId: string): Promise<AppData | n
       id: c.id,
       name: c.name,
       icon: c.icon,
-      supportsTaste: c.supports_taste ?? false,
+      supportsTaste: (c as any).supports_taste ?? false,
       order: c.order,
     }));
 
@@ -72,7 +72,7 @@ export async function fetchDataFromSupabase(userId: string): Promise<AppData | n
       workId: r.work_id,
       date: r.date,
       title: r.title,
-      taste: r.taste || undefined,
+      taste: (r as any).taste || undefined,
       evaluation: r.evaluation || '',
       notes: r.notes || '',
       mainImage: r.main_image || '',
@@ -115,54 +115,66 @@ export async function syncDataToSupabase(userId: string, data: AppData): Promise
   }));
 
   // --- Build DB rows ---
+  // Never store raw base64 in the database — rows where the primary image
+  // still failed to upload are skipped entirely and will be retried next sync.
   const categoryRows = data.categories.map(c => ({
     id: c.id,
     user_id: userId,
     name: c.name,
     icon: c.icon,
     order: c.order,
-    supports_taste: c.supportsTaste ?? false,
   }));
 
-  const workRows = updatedWorks.map(w => ({
-    id: w.id,
-    user_id: userId,
-    category_id: w.categoryId,
-    name: w.name,
-    cover_image: w.coverImage,
-    original_cover_image: w.originalCoverImage ?? null,
-    is_emoji_cover: w.isEmojiCover,
-    is_manual_cover: w.isManualCover ?? false,
-    created_at: new Date(w.createdAt).toISOString(),
-    updated_at: new Date(w.updatedAt).toISOString(),
-  }));
+  const workRows = updatedWorks
+    .filter(w => w.isEmojiCover || !isBase64(w.coverImage))
+    .map(w => ({
+      id: w.id,
+      user_id: userId,
+      category_id: w.categoryId,
+      name: w.name,
+      cover_image: w.coverImage,
+      // Drop original if upload failed — never store base64 in DB
+      original_cover_image: isBase64(w.originalCoverImage ?? '') ? null : (w.originalCoverImage ?? null),
+      is_emoji_cover: w.isEmojiCover,
+      is_manual_cover: w.isManualCover ?? false,
+      created_at: new Date(w.createdAt).toISOString(),
+      updated_at: new Date(w.updatedAt).toISOString(),
+    }));
 
-  const recordRows = updatedRecords.map(r => ({
-    id: r.id,
-    user_id: userId,
-    work_id: r.workId,
-    title: r.title,
-    date: r.date,
-    taste: r.taste ?? null,
-    evaluation: r.evaluation ?? null,
-    notes: r.notes ?? null,
-    main_image: r.mainImage,
-    original_main_image: r.originalMainImage ?? null,
-    is_emoji_main: r.isEmojiMain,
-    extra_images: r.extraImages,
-    created_at: new Date(r.createdAt).toISOString(),
-    updated_at: new Date(r.createdAt).toISOString(),
-  }));
+  const recordRows = updatedRecords
+    .filter(r => r.isEmojiMain || !isBase64(r.mainImage))
+    .map(r => ({
+      id: r.id,
+      user_id: userId,
+      work_id: r.workId,
+      title: r.title,
+      date: r.date,
+      // taste column not in DB schema — omitted
+      evaluation: r.evaluation ?? null,
+      notes: r.notes ?? null,
+      main_image: r.mainImage,
+      // Drop original if upload failed — never store base64 in DB
+      original_main_image: isBase64(r.originalMainImage ?? '') ? null : (r.originalMainImage ?? null),
+      is_emoji_main: r.isEmojiMain,
+      // Drop any extra images that failed to upload
+      extra_images: r.extraImages.filter(img => !isBase64(img)),
+      created_at: new Date(r.createdAt).toISOString(),
+      updated_at: new Date(r.createdAt).toISOString(),
+    }));
 
   // --- Upsert ---
   const [catErr, worksErr, recordsErr] = await Promise.all([
     supabase.from('categories').upsert(categoryRows, { onConflict: 'id' }).then(r => r.error),
-    supabase.from('works').upsert(workRows, { onConflict: 'id' }).then(r => r.error),
-    supabase.from('records').upsert(recordRows, { onConflict: 'id' }).then(r => r.error),
+    workRows.length > 0
+      ? supabase.from('works').upsert(workRows, { onConflict: 'id' }).then(r => r.error)
+      : Promise.resolve(null),
+    recordRows.length > 0
+      ? supabase.from('records').upsert(recordRows, { onConflict: 'id' }).then(r => r.error)
+      : Promise.resolve(null),
   ]);
-  if (catErr) console.error('Category upsert error:', catErr);
-  if (worksErr) console.error('Works upsert error:', worksErr);
-  if (recordsErr) console.error('Records upsert error:', recordsErr);
+  if (catErr) { console.error('Category upsert error:', catErr); throw new Error(`Category sync failed: ${catErr.message}`); }
+  if (worksErr) { console.error('Works upsert error:', worksErr); throw new Error(`Works sync failed: ${worksErr.message}`); }
+  if (recordsErr) { console.error('Records upsert error:', recordsErr); throw new Error(`Records sync failed: ${recordsErr.message}`); }
 
   // --- Reconcile deletions ---
   const [remoteCats, remoteWorks, remoteRecords] = await Promise.all([

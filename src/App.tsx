@@ -32,6 +32,21 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 
 import { useApp } from './store/AppContext';
+import { useToast } from './components/ui/use-toast';
+
+// Shows a toast whenever a background sync error occurs
+function SyncErrorWatcher() {
+  const { syncError } = useApp();
+  const { toast } = useToast();
+  const prevError = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (syncError && syncError !== prevError.current) {
+      toast({ title: '同步失败', description: syncError, variant: 'destructive' });
+    }
+    prevError.current = syncError;
+  }, [syncError]);
+  return null;
+}
 
 // Redirects unauthenticated users to /login
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -94,6 +109,7 @@ function MainContent() {
           </Routes>
           {!isBatchImport && !isAuthPage && <BottomNav />}
           {!isBatchImport && !isAuthPage && <UndoBar />}
+          <SyncErrorWatcher />
         </>
       )}
     </div>

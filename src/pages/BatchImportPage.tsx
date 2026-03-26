@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronLeft, 
@@ -12,6 +12,7 @@ import {
   Scissors
 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,9 +36,12 @@ interface BatchItem {
 const BatchImportPage = () => {
   const { data, batchAddRecords } = useApp();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
+  const MAX_BATCH_ITEMS = 20;
+
   const [items, setItems] = useState<BatchItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [batchCategory, setBatchCategory] = useState<string>('');
@@ -49,58 +53,88 @@ const BatchImportPage = () => {
   const batchCatRef = useRef<HTMLDivElement>(null);
   const firstItemNameRef = useRef<HTMLDivElement>(null);
 
+  const makeBatchId = () => {
+    // Some mobile browsers / WebViews don't support crypto.randomUUID().
+    const canRandomUUID =
+      typeof crypto !== 'undefined' && typeof (crypto as any).randomUUID === 'function';
+    if (canRandomUUID) return crypto.randomUUID();
+    return `batch_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
+
     if (files.length === 0) return;
 
-    if (files.length > 20) {
-      alert('一次最多只能导入 20 张照片，请重新选择');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    const remaining = MAX_BATCH_ITEMS - items.length;
+    if (remaining <= 0) {
+      toast({
+        title: '照片数量已达上限',
+        description: `一次最多导入 ${MAX_BATCH_ITEMS} 张`,
+        variant: 'destructive',
+      });
       return;
     }
 
-    const newItems: BatchItem[] = files.map(file => ({
-      id: crypto.randomUUID(),
+    let filesToAdd = files;
+    if (files.length > remaining) {
+      filesToAdd = files.slice(0, remaining);
+      toast({
+        title: '照片数量超出限制',
+        description: `一次最多导入 ${MAX_BATCH_ITEMS} 张，已自动保留前 ${MAX_BATCH_ITEMS} 张`,
+        variant: 'destructive',
+      });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // 立刻把每张图作为 isProcessing:true 的卡片显示出来，不阻塞 UI
+    let placeholders: BatchItem[] = [];
+    placeholders = filesToAdd.map(file => ({
+      id: makeBatchId(),
       file,
-      preview: URL.createObjectURL(file),
+      preview: '',
       name: '',
-      date: '',
+      date: today,
       categoryId: '',
-      isProcessing: true
+      isProcessing: true,
     }));
 
-    setItems(prev => [...prev, ...newItems]);
+    setItems(prev => [...prev, ...placeholders]);
     setIsProcessing(true);
 
-    // Process files one by one to avoid crashing
-    for (const item of newItems) {
+    // 逐张在后台处理，处理完就更新对应卡片
+    let completedCount = 0;
+    placeholders.forEach(async (placeholder) => {
       try {
-        const date = await extractPhotoDate(item.file);
-        const compressed = await compressImage(item.file, 1080, 0.95);
-        
-        setItems(prev => prev.map(i => i.id === item.id ? {
-          ...i,
-          preview: compressed,
-          date: date || new Date().toISOString().split('T')[0],
-          isProcessing: false
-        } : i));
-      } catch (error) {
-        console.error('Failed to process image:', error);
-        setItems(prev => prev.map(i => i.id === item.id ? {
-          ...i,
-          isProcessing: false,
-          error: '处理失败'
-        } : i));
+        const [date, compressed] = await Promise.all([
+          extractPhotoDate(placeholder.file),
+          compressImage(placeholder.file, 1080, 0.85),
+        ]);
+        setItems(prev => prev.map(i =>
+          i.id === placeholder.id
+            ? { ...i, preview: compressed, date: date || today, isProcessing: false }
+            : i
+        ));
+      } catch {
+        setItems(prev => prev.map(i =>
+          i.id === placeholder.id
+            ? { ...i, preview: URL.createObjectURL(placeholder.file), date: today, isProcessing: false, error: '处理失败' }
+            : i
+        ));
+      } finally {
+        completedCount++;
+        if (completedCount === placeholders.length) {
+          setIsProcessing(false);
+          if (localStorage.getItem('foodaily_batch_guide_shown') !== 'true') {
+            setGuideStep(1);
+          }
+            
+        }
       }
-    }
-
-    setIsProcessing(false);
-    // Show guide after first batch is processed if not shown before
-    if (localStorage.getItem('foodaily_batch_guide_shown') !== 'true') {
-      setGuideStep(1);
-    }
+    });
   };
 
   const removeItem = (id: string) => {
@@ -191,9 +225,20 @@ const BatchImportPage = () => {
 
       <div className="flex-1 overflow-y-auto pb-32">
         <div className="p-4 space-y-6">
+          {/* Input always in DOM — avoids iOS PWA programmatic-click bug */}
+          <input
+            id="batch-file-input"
+            type="file"
+            multiple
+            accept="image/*"
+            className="sr-only"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+          />
+
           {items.length === 0 ? (
-            <div 
-              onClick={() => fileInputRef.current?.click()}
+            <label
+              htmlFor="batch-file-input"
               className="aspect-[4/5] rounded-[2.5rem] border-2 border-dashed border-border/50 flex flex-col items-center justify-center space-y-4 bg-card/30 hover:bg-card/50 transition-colors cursor-pointer group"
             >
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -201,17 +246,9 @@ const BatchImportPage = () => {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-sm font-bold text-foreground">点击选择多张照片</p>
-                <p className="text-xs text-muted-foreground">支持一次最多 20 张</p>
+                <p className="text-xs text-muted-foreground">支持一次最多 {MAX_BATCH_ITEMS} 张</p>
               </div>
-              <input 
-                type="file" 
-                multiple 
-                accept="image/*" 
-                className="hidden" 
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-              />
-            </div>
+            </label>
           ) : (
             <div className="space-y-6">
               {/* Batch Category Tool */}
@@ -372,6 +409,7 @@ const BatchImportPage = () => {
         </div>
       </div>
 
+
       {/* Onboarding Guide Overlay */}
       <AnimatePresence>
         {guideStep > 0 && (
@@ -388,7 +426,15 @@ const BatchImportPage = () => {
                   <h4 className="text-sm font-bold text-foreground mb-1">快捷分类 (1/3)</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">您可以一键为所有照片设置相同分类</p>
                   <div className="flex justify-end mt-4">
-                    <Button size="sm" onClick={() => setGuideStep(2)} className="h-8 rounded-lg text-[10px] font-bold px-4">下一步</Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setGuideStep(2);
+                      }}
+                      className="h-8 rounded-lg text-[10px] font-bold px-4"
+                    >
+                      下一步
+                    </Button>
                   </div>
                 </div>
                 <div className="w-4 h-4 bg-white rotate-45 mx-auto -mt-2 border-l border-t border-primary/20" />
@@ -402,7 +448,15 @@ const BatchImportPage = () => {
                   <h4 className="text-sm font-bold text-foreground mb-1">稍后命名 (2/3)</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">您可以暂时不填写名称，后续再改</p>
                   <div className="flex justify-end mt-4">
-                    <Button size="sm" onClick={() => setGuideStep(3)} className="h-8 rounded-lg text-[10px] font-bold px-4">下一步</Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setGuideStep(3);
+                      }}
+                      className="h-8 rounded-lg text-[10px] font-bold px-4"
+                    >
+                      下一步
+                    </Button>
                   </div>
                 </div>
                 <div className="w-4 h-4 bg-white rotate-45 ml-24 -mt-2 border-l border-t border-primary/20" />

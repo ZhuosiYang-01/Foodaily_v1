@@ -7,49 +7,62 @@ import ExifReader from 'exifreader';
 export async function compressImage(
   source: string | File,
   maxWidth = 1080,
-  quality = 0.95
+  quality = 0.85
 ): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
+  // Build an object URL so Safari can decode any format it supports (incl. HEIC)
+  let objectURL: string;
+  let needsRevoke = false;
+  if (source instanceof File) {
+    objectURL = URL.createObjectURL(source);
+    needsRevoke = true;
+  } else {
+    objectURL = source;
+  }
 
-      // Calculate new dimensions
+  return new Promise<string>((resolve, reject) => {
+    const img = new Image();
+    let done = false;
+
+    // Safety timeout: if Safari never fires onload/onerror, reject after 12s
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      if (needsRevoke) URL.revokeObjectURL(objectURL);
+      reject(new Error('Image load timeout'));
+    }, 12000);
+
+    img.onload = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (needsRevoke) URL.revokeObjectURL(objectURL);
+
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
       if (width > maxWidth) {
-        height = (height * maxWidth) / width;
+        height = Math.round((height * maxWidth) / width);
         width = maxWidth;
       }
 
+      const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-
       const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Failed to get canvas context'));
-        return;
-      }
-
+      if (!ctx) { reject(new Error('Failed to get canvas context')); return; }
       ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to base64
-      const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-      resolve(compressedBase64);
+
+      resolve(canvas.toDataURL('image/jpeg', quality));
     };
 
-    img.onerror = (err) => reject(err);
+    img.onerror = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (needsRevoke) URL.revokeObjectURL(objectURL);
+      reject(new Error('Failed to load image'));
+    };
 
-    if (typeof source === 'string') {
-      img.src = source;
-    } else {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(source);
-    }
+    img.src = objectURL;
   });
 }
 
@@ -106,7 +119,12 @@ export async function getCroppedImg(
  */
 export async function extractPhotoDate(file: File): Promise<string | null> {
   try {
-    const tags = await ExifReader.load(file);
+    // Only read the first 64KB — EXIF data is always at the start of the file
+    const slice = file.slice(0, 64 * 1024);
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('ExifReader timeout')), 3000)
+    );
+    const tags = await Promise.race([ExifReader.load(slice), timeoutPromise]);
     
     // Try to find the original date/time
     const dateTime = tags['DateTimeOriginal'] || tags['DateTime'] || tags['CreateDate'];

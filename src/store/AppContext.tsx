@@ -31,7 +31,9 @@ interface AppContextType {
   importData: (json: string, mode: 'merge' | 'replace') => void;
   clearAllData: () => void;
   syncStatus: 'idle' | 'syncing' | 'error';
+  syncError: string | null;
   currentUserId: string | null;
+  syncNow: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -63,8 +65,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [syncError, setSyncError] = useState<string | null>(null);
   const isSyncingFromCloud = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
 
   // Load data on mount
   useEffect(() => {
@@ -126,8 +131,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           await localforage.setItem(STORAGE_KEY, initialData);
           await syncDataToSupabase(userId, initialData);
         } else {
-          setData(cloudData);
-          await localforage.setItem(STORAGE_KEY, cloudData);
+          // Merge local + cloud: keep any local records/works not yet synced to cloud
+          const localData = await localforage.getItem<AppData>(STORAGE_KEY);
+          let merged: AppData;
+          if (localData && (localData.works.length > 0 || localData.records.length > 0)) {
+            const worksMap = new Map([
+              ...localData.works.map(w => [w.id, w] as const),
+              ...cloudData.works.map(w => [w.id, w] as const),
+            ]);
+            const recordsMap = new Map([
+              ...localData.records.map(r => [r.id, r] as const),
+              ...cloudData.records.map(r => [r.id, r] as const),
+            ]);
+            merged = {
+              categories: cloudData.categories,
+              works: Array.from(worksMap.values()),
+              records: Array.from(recordsMap.values()),
+            };
+          } else {
+            merged = cloudData;
+          }
+          setData(merged);
+          await localforage.setItem(STORAGE_KEY, merged);
         }
       }
       setSyncStatus('idle');
@@ -157,6 +182,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Sync immediately when page becomes hidden (tab switch, app backgrounded, refresh, close)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && currentUserId && !isSyncingFromCloud.current) {
+        syncNow();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [currentUserId]);
+
   // Debounced sync to Supabase after data changes
   useEffect(() => {
     if (!currentUserId || isLoading || isSyncingFromCloud.current) return;
@@ -173,9 +209,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           await localforage.setItem(STORAGE_KEY, updatedData);
           isSyncingFromCloud.current = false;
         }
+        setSyncError(null);
         setSyncStatus('idle');
       } catch (e) {
         console.error('Sync failed:', e);
+        setSyncError(e instanceof Error ? e.message : String(e));
         setSyncStatus('error');
       }
     }, 2000);
@@ -772,6 +810,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('foodaily_initialized');
   };
 
+  const syncNow = async () => {
+    if (!currentUserId) return;
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    setSyncStatus('syncing');
+    try {
+      const latest = dataRef.current;
+      const updatedData = await syncDataToSupabase(currentUserId, latest);
+      if (updatedData !== latest) {
+        isSyncingFromCloud.current = true;
+        setData(updatedData);
+        await localforage.setItem(STORAGE_KEY, updatedData);
+        isSyncingFromCloud.current = false;
+      }
+      setSyncError(null);
+      setSyncStatus('idle');
+    } catch (e) {
+      console.error('Sync failed:', e);
+      setSyncError(e instanceof Error ? e.message : String(e));
+      setSyncStatus('error');
+    }
+  };
+
   const loadDemoData = () => {
     setData({
       categories: DEFAULT_CATEGORIES,
@@ -809,7 +869,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       importData,
       clearAllData,
       syncStatus,
+      syncError,
       currentUserId,
+      syncNow,
     }}>
       {children}
     </AppContext.Provider>

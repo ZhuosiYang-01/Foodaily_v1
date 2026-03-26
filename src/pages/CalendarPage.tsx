@@ -220,19 +220,18 @@ const CalendarPage = () => {
                     )}>
                       {day}
                     </span>
-                    {dayRecords && (
-                      <div className="absolute inset-1 rounded-lg overflow-hidden flex flex-wrap gap-0.5 p-0.5 bg-muted/50 shadow-inner">
-                        {dayRecords.slice(0, 4).map((r, i) => (
-                          <div key={i} className="flex-1 min-w-[40%] h-full flex items-center justify-center overflow-hidden rounded-sm">
-                            {r.isEmojiMain ? (
-                              <span className="text-[10px]">{r.mainImage}</span>
-                            ) : (
-                              <img src={r.mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {dayRecords && (() => {
+                      const latest = [...dayRecords].sort((a, b) => b.createdAt - a.createdAt)[0];
+                      return (
+                        <div className="absolute inset-1 rounded-lg overflow-hidden bg-muted/50 shadow-inner flex items-center justify-center">
+                          {latest.isEmojiMain ? (
+                            <span className="text-base">{latest.mainImage}</span>
+                          ) : (
+                            <img src={latest.mainImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
               </div>
