@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, Camera, Smile, X, PlusCircle, Scissors } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ const EditRecordPage = () => {
   const { id } = useParams<{ id: string }>();
   const { data, updateRecord } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const record = useMemo(() => data.records.find(r => r.id === id), [id, data.records]);
   const work = useMemo(() => data.works.find(w => w.id === record?.workId), [record, data.works]);
@@ -120,7 +121,7 @@ const EditRecordPage = () => {
       });
       
       setTimeout(() => {
-        navigate(`/record/${id}`, { replace: true });
+        navigate(`/record/${id}`, { replace: true, state: location.state });
       }, 50);
     } catch (error) {
       console.error('Update failed:', error);

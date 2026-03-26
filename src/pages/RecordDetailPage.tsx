@@ -101,7 +101,7 @@ const RecordDetailPage = () => {
         
         <div className="absolute top-4 right-4 z-10 flex gap-2">
           <button
-            onClick={() => navigate(`/edit-record/${record.id}`)}
+            onClick={() => navigate(`/edit-record/${record.id}`, { state: location.state })}
             className="p-2 bg-black/20 backdrop-blur-md text-white rounded-full hover:bg-black/40 transition-colors"
           >
             <Edit3 size={20} />
@@ -140,7 +140,7 @@ const RecordDetailPage = () => {
           <Badge variant="secondary" className="bg-primary text-white border-none mb-2 px-3 py-0.5 h-5 text-[10px] uppercase font-bold tracking-wider">
             {category?.name}
           </Badge>
-          <h1 className="text-3xl font-bold serif leading-tight">{record.title}</h1>
+          <h1 className="text-3xl font-bold leading-tight">{record.title}</h1>
           <div className="flex items-center justify-between mt-1">
             <p className="text-sm opacity-80 font-medium flex items-center gap-1.5">
               <Calendar size={14} /> {formatDate(record.date)}
