@@ -134,7 +134,7 @@ const StatsPage = () => {
             <div className="space-y-1 text-sm">
               <p>你从 <span className="font-bold">{formatDate(stats.firstDate)}</span> 开始记录</p>
               <p>到今天一共 <span className="font-black text-2xl">{stats.daysSinceFirst}</span> 天了</p>
-              <p>这其中你一共下厨 <span className="font-black text-2xl">{stats.totalRecords}</span> 次</p>
+              <p>期间你一共下厨 <span className="font-black text-2xl">{stats.totalRecords}</span> 次</p>
               <p>解锁菜谱 <span className="font-black text-2xl">{stats.totalWorks}</span> 道</p>
             </div>
           </div>
@@ -143,7 +143,7 @@ const StatsPage = () => {
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-3">
               <div className="bg-card rounded-3xl border border-border/50 shadow-sm p-5 flex-1 flex flex-col justify-between">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">本月</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">本月下厨</p>
                 <div className="mt-2">
                   <span className="text-4xl font-black text-foreground">{stats.monthlyCount}</span>
                   <span className="text-sm font-bold text-muted-foreground ml-1">次</span>
