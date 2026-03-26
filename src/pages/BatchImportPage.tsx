@@ -26,6 +26,7 @@ interface BatchItem {
   id: string;
   file: File;
   preview: string;
+  originalPreview?: string;
   name: string;
   date: string;
   categoryId: string;
@@ -116,7 +117,7 @@ const BatchImportPage = () => {
         ]);
         setItems(prev => prev.map(i =>
           i.id === placeholder.id
-            ? { ...i, preview: compressed, date: date || today, isProcessing: false }
+            ? { ...i, preview: compressed, originalPreview: compressed, date: date || today, isProcessing: false }
             : i
         ));
       } catch {
@@ -171,6 +172,7 @@ const BatchImportPage = () => {
           workId: '',
           date: item.date,
           mainImage: item.preview,
+          originalMainImage: item.originalPreview,
           isEmojiMain: false,
           title: item.name,
           evaluation: '',
@@ -317,7 +319,7 @@ const BatchImportPage = () => {
                             <>
                               <img src={item.preview} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                               <button 
-                                onClick={() => setCropTarget({ id: item.id, src: item.preview })}
+                                onClick={() => setCropTarget({ id: item.id, src: item.originalPreview || item.preview })}
                                 className="absolute bottom-1 right-1 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition-colors"
                               >
                                 <Scissors size={12} />

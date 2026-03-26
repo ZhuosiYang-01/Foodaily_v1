@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, Edit3, Trash2, Check, X, ArrowUp, ArrowDown, RotateCcw, Smile } from 'lucide-react';
+import { ChevronLeft, Plus, Edit3, Trash2, Check, X, ArrowUp, ArrowDown, RotateCcw, Smile, GitMerge } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +12,9 @@ import { Category } from '../types';
 import EmojiPicker from '../components/EmojiPicker';
 
 const CategorySettingsPage = () => {
-  const { data, addCategory, updateCategory, deleteCategory, reorderCategories, moveWorksToCategory } = useApp();
+  const { data, addCategory, updateCategory, deleteCategory, reorderCategories, moveWorksToCategory, mergeDuplicateWorks } = useApp();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newIcon, setNewIcon] = useState('🍽️');
@@ -21,6 +23,8 @@ const CategorySettingsPage = () => {
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [editIcon, setEditIcon] = useState('');
+  const [isEditEmojiPickerOpen, setIsEditEmojiPickerOpen] = useState(false);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [showMoveOptions, setShowMoveOptions] = useState(false);
@@ -50,11 +54,12 @@ const CategorySettingsPage = () => {
   const startEditing = (cat: Category) => {
     setEditingId(cat.id);
     setEditName(cat.name);
+    setEditIcon(cat.icon);
   };
 
   const saveEdit = () => {
     if (editingId && editName.trim()) {
-      updateCategory(editingId, { name: editName });
+      updateCategory(editingId, { name: editName, icon: editIcon });
       setEditingId(null);
     }
   };
@@ -105,21 +110,37 @@ const CategorySettingsPage = () => {
                       <ArrowDown size={14} />
                     </button>
                   </div>
-                  <span className="text-2xl">{cat.icon}</span>
                   {editingId === cat.id ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <Input 
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="h-8 text-sm font-bold rounded-lg border-primary/30 bg-background"
-                        autoFocus
-                        onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                    <>
+                      <button
+                        onClick={() => setIsEditEmojiPickerOpen(true)}
+                        className="text-2xl w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors shrink-0"
+                      >
+                        {editIcon}
+                      </button>
+                      <div className="flex items-center gap-2 flex-1">
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="h-8 text-sm font-bold rounded-lg border-primary/30 bg-background"
+                          autoFocus
+                          onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                        />
+                        <button onClick={saveEdit} className="p-1 text-primary"><Check size={18} /></button>
+                        <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground"><X size={18} /></button>
+                      </div>
+                      <EmojiPicker
+                        isOpen={isEditEmojiPickerOpen}
+                        onClose={() => setIsEditEmojiPickerOpen(false)}
+                        onSelect={(emoji) => setEditIcon(emoji)}
+                        currentEmoji={editIcon}
                       />
-                      <button onClick={saveEdit} className="p-1 text-primary"><Check size={18} /></button>
-                      <button onClick={() => setEditingId(null)} className="p-1 text-muted-foreground"><X size={18} /></button>
-                    </div>
+                    </>
                   ) : (
-                    <span className="text-sm font-bold text-foreground truncate">{cat.name}</span>
+                    <>
+                      <span className="text-2xl">{cat.icon}</span>
+                      <span className="text-sm font-bold text-foreground truncate">{cat.name}</span>
+                    </>
                   )}
                 </div>
                 {editingId !== cat.id && (
@@ -161,6 +182,25 @@ const CategorySettingsPage = () => {
             </div>
           ))}
         </div>
+
+        {/* Merge Duplicates */}
+        <Button
+          variant="outline"
+          onClick={() => {
+            const seen = new Set<string>();
+            let dupCount = 0;
+            for (const w of data.works) {
+              const key = `${w.categoryId}::${w.name}`;
+              if (seen.has(key)) dupCount++;
+              else seen.add(key);
+            }
+            mergeDuplicateWorks();
+            toast({ title: dupCount > 0 ? `已合并 ${dupCount} 个重复作品` : '没有需要合并的重复作品' });
+          }}
+          className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest border-border text-muted-foreground bg-card/50 hover:text-primary hover:border-primary/30 transition-all"
+        >
+          <GitMerge size={16} className="mr-2" /> 合并同名作品
+        </Button>
 
         {/* Add New Category */}
         {isAdding ? (

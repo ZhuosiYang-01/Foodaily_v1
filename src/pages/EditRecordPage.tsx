@@ -52,8 +52,21 @@ const EditRecordPage = () => {
       setOriginalMainImage(record.originalMainImage);
       setIsEmojiMain(record.isEmojiMain);
       setExtraImages(record.extraImages || []);
+      // If title matches auto-generated pattern, allow auto-update; otherwise protect it
+      const autoTitle = record.taste ? `${record.taste}${work?.name}` : work?.name;
+      setHasManuallyEditedTitle(record.title !== autoTitle);
     }
   }, [record, work]);
+
+  // Auto-update title when taste or workName changes (only if user hasn't manually edited it)
+  useEffect(() => {
+    if (hasManuallyEditedTitle) return;
+    if (taste && workName) {
+      setTitle(`${taste}${workName}`);
+    } else if (workName) {
+      setTitle(workName);
+    }
+  }, [taste, workName]);
 
   const selectedCategory = useMemo(() => data.categories.find(c => c.id === categoryId), [categoryId, data.categories]);
 

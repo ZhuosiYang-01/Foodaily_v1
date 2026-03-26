@@ -34,6 +34,7 @@ interface AppContextType {
   syncError: string | null;
   currentUserId: string | null;
   syncNow: () => Promise<void>;
+  mergeDuplicateWorks: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,6 +56,46 @@ const INITIAL_RECORDS: RecordEntry[] = [];
 
 const STORAGE_KEY = 'foodaily_v2_data';
 const INITIALIZED_KEY = 'foodaily_v2_initialized';
+
+// Pure helper: merge works with identical name+category, returns updated AppData
+function deduplicateWorks(data: AppData): AppData {
+  const now = Date.now();
+  const groups = new Map<string, Work[]>();
+  for (const w of data.works) {
+    const key = `${w.categoryId}::${w.name}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(w);
+  }
+
+  let updatedWorks = [...data.works];
+  let updatedRecords = [...data.records];
+  let hasDups = false;
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) continue;
+    hasDups = true;
+    const sorted = [...group].sort((a, b) => a.createdAt - b.createdAt);
+    const canonical = sorted[0];
+    const dupIds = new Set(sorted.slice(1).map(w => w.id));
+    updatedRecords = updatedRecords.map(r => dupIds.has(r.workId) ? { ...r, workId: canonical.id } : r);
+    updatedWorks = updatedWorks.filter(w => !dupIds.has(w.id));
+  }
+
+  if (!hasDups) return data;
+
+  updatedWorks = updatedWorks.map(w => {
+    if (w.isManualCover) return w;
+    const recs = updatedRecords.filter(r => r.workId === w.id);
+    if (!recs.length) return w;
+    const latest = [...recs].sort((a, b) => {
+      const d = b.date.localeCompare(a.date);
+      return d !== 0 ? d : b.createdAt - a.createdAt;
+    })[0];
+    return { ...w, coverImage: latest.mainImage, originalCoverImage: latest.originalMainImage, isEmojiCover: latest.isEmojiMain, updatedAt: now };
+  });
+
+  return { ...data, works: updatedWorks, records: updatedRecords };
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<AppData>({
@@ -151,8 +192,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else {
             merged = cloudData;
           }
-          setData(merged);
-          await localforage.setItem(STORAGE_KEY, merged);
+          const deduped = deduplicateWorks(merged);
+          setData(deduped);
+          await localforage.setItem(STORAGE_KEY, deduped);
         }
       }
       setSyncStatus('idle');
@@ -840,6 +882,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const mergeDuplicateWorks = (): void => {
+    setData(prev => deduplicateWorks(prev));
+  };
+
   const loadDemoData = () => {
     setData({
       categories: DEFAULT_CATEGORIES,
@@ -880,6 +926,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       syncError,
       currentUserId,
       syncNow,
+      mergeDuplicateWorks,
     }}>
       {children}
     </AppContext.Provider>
