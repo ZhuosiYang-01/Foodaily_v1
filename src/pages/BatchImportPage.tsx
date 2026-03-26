@@ -48,6 +48,7 @@ const BatchImportPage = () => {
   const [guideStep, setGuideStep] = useState<number>(0); // 0: none, 1: batch cat, 2: name, 3: limits
   const [isSaving, setIsSaving] = useState(false);
   const [cropTarget, setCropTarget] = useState<{ id: string, src: string } | null>(null);
+  const [autocompleteItemId, setAutocompleteItemId] = useState<string | null>(null);
 
   // Refs for guide positioning
   const batchCatRef = useRef<HTMLDivElement>(null);
@@ -151,16 +152,15 @@ const BatchImportPage = () => {
   };
 
   const handleSaveAll = async () => {
-    // Validation
-    const firstErrorIdx = items.findIndex(i => !i.categoryId);
-    if (firstErrorIdx !== -1) {
-      setItems(prev => prev.map(i => !i.categoryId ? { ...i, error: '请选择分类' } : i));
-      
-      // Scroll to first error
-      const errorEl = document.getElementById(`item-${items[firstErrorIdx].id}`);
-      if (errorEl) {
-        errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    // Validation: name and category both required
+    const firstErrorItem = items.find(i => !i.name.trim() || !i.categoryId);
+    if (firstErrorItem) {
+      setItems(prev => prev.map(i => ({
+        ...i,
+        error: !i.name.trim() ? '请填写名称' : !i.categoryId ? '请选择分类' : undefined,
+      })));
+      const errorEl = document.getElementById(`item-${firstErrorItem.id}`);
+      if (errorEl) errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -172,13 +172,13 @@ const BatchImportPage = () => {
           date: item.date,
           mainImage: item.preview,
           isEmojiMain: false,
-          title: item.name || `未命名记录 (${item.date})`,
+          title: item.name,
           evaluation: '',
           notes: '',
           extraImages: []
         },
         workInfo: {
-          name: item.name || `未命名记录 (${item.date})`,
+          name: item.name,
           categoryId: item.categoryId,
           coverImage: item.preview,
           isEmoji: false
@@ -332,12 +332,49 @@ const BatchImportPage = () => {
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest w-8 shrink-0">
                               名称
                             </span>
-                            <Input 
-                              placeholder="作品名称 (可选)" 
-                              value={item.name}
-                              onChange={(e) => updateItem(item.id, { name: e.target.value })}
-                              className="h-10 rounded-xl bg-background border-border text-xs focus-visible:ring-primary/20 flex-1"
-                            />
+                            <div className="flex-1 relative">
+                              <Input
+                                placeholder="作品名称 *"
+                                value={item.name}
+                                onChange={(e) => {
+                                  updateItem(item.id, { name: e.target.value });
+                                  setAutocompleteItemId(e.target.value ? item.id : null);
+                                }}
+                                onFocus={() => item.name && setAutocompleteItemId(item.id)}
+                                onBlur={() => setTimeout(() => setAutocompleteItemId(null), 150)}
+                                className={cn(
+                                  "h-10 rounded-xl bg-background border-border text-xs focus-visible:ring-primary/20 w-full",
+                                  item.error === '请填写名称' && "border-destructive"
+                                )}
+                              />
+                              {autocompleteItemId === item.id && (() => {
+                                const q = item.name.toLowerCase();
+                                const existingNames = data.works.map(w => w.name);
+                                const batchNames = items
+                                  .filter(i => i.id !== item.id && i.name.trim())
+                                  .map(i => i.name.trim());
+                                const candidates = [...new Set([...existingNames, ...batchNames])]
+                                  .filter(n => n.toLowerCase().includes(q) && n !== item.name);
+                                if (candidates.length === 0) return null;
+                                return (
+                                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+                                    {candidates.slice(0, 5).map(name => (
+                                      <button
+                                        key={name}
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          updateItem(item.id, { name });
+                                          setAutocompleteItemId(null);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors truncate"
+                                      >
+                                        {name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
 
                           {/* Row 2: Date */}
@@ -423,30 +460,8 @@ const BatchImportPage = () => {
             {guideStep === 1 && (
               <div className="absolute top-[160px] left-4 right-4 space-y-2">
                 <div className="bg-white rounded-2xl p-4 shadow-2xl border border-primary/20 animate-in zoom-in-95 duration-300">
-                  <h4 className="text-sm font-bold text-foreground mb-1">快捷分类 (1/3)</h4>
+                  <h4 className="text-sm font-bold text-foreground mb-1">快捷分类 (1/2)</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">您可以一键为所有照片设置相同分类</p>
-                  <div className="flex justify-end mt-4">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setGuideStep(2);
-                      }}
-                      className="h-8 rounded-lg text-[10px] font-bold px-4"
-                    >
-                      下一步
-                    </Button>
-                  </div>
-                </div>
-                <div className="w-4 h-4 bg-white rotate-45 mx-auto -mt-2 border-l border-t border-primary/20" />
-              </div>
-            )}
-
-            {/* Step 2: Name */}
-            {guideStep === 2 && (
-              <div className="absolute top-[320px] left-4 right-4 space-y-2">
-                <div className="bg-white rounded-2xl p-4 shadow-2xl border border-primary/20 animate-in zoom-in-95 duration-300">
-                  <h4 className="text-sm font-bold text-foreground mb-1">稍后命名 (2/3)</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">您可以暂时不填写名称，后续再改</p>
                   <div className="flex justify-end mt-4">
                     <Button
                       size="sm"
@@ -459,11 +474,11 @@ const BatchImportPage = () => {
                     </Button>
                   </div>
                 </div>
-                <div className="w-4 h-4 bg-white rotate-45 ml-24 -mt-2 border-l border-t border-primary/20" />
+                <div className="w-4 h-4 bg-white rotate-45 mx-auto -mt-2 border-l border-t border-primary/20" />
               </div>
             )}
 
-            {/* Step 3: Limits */}
+            {/* Step 2: Limits */}
             {guideStep === 3 && (
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -472,7 +487,7 @@ const BatchImportPage = () => {
               >
                 <div className="text-center space-y-2">
                   <AlertCircle size={40} className="mx-auto text-primary mb-2" />
-                  <h3 className="text-lg font-bold text-foreground">功能限制 (3/3)</h3>
+                  <h3 className="text-lg font-bold text-foreground">功能限制 (2/2)</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     批量模式暂不支持添加备忘、评价以及其他照片
                   </p>

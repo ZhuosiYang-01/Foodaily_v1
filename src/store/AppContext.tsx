@@ -530,6 +530,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return w;
       });
 
+      // If the work changed and old work now has 0 remaining records, remove it
+      if (oldWorkId !== newWorkId) {
+        const remainingForOldWork = updatedRecords.filter(r => r.workId === oldWorkId);
+        if (remainingForOldWork.length === 0) {
+          updatedWorks = updatedWorks.filter(w => w.id !== oldWorkId);
+        }
+      }
+
       return {
         ...prev,
         records: updatedRecords,

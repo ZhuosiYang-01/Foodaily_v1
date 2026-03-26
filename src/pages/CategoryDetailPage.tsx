@@ -22,6 +22,7 @@ const CategoryDetailPage = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedWorkIds, setSelectedWorkIds] = useState<string[]>([]);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [targetCategoryId, setTargetCategoryId] = useState<string>('');
 
   const handleSortChange = (value: SortType) => {
@@ -67,11 +68,14 @@ const CategoryDetailPage = () => {
 
   const handleBatchDelete = () => {
     if (selectedWorkIds.length === 0) return;
-    if (window.confirm(`确定要删除选中的 ${selectedWorkIds.length} 个作品吗？`)) {
-      batchDeleteWorks(selectedWorkIds);
-      setIsSelectionMode(false);
-      setSelectedWorkIds([]);
-    }
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmBatchDelete = () => {
+    batchDeleteWorks(selectedWorkIds);
+    setIsDeleteDialogOpen(false);
+    setIsSelectionMode(false);
+    setSelectedWorkIds([]);
   };
 
   const handleBatchMove = () => {
@@ -212,6 +216,25 @@ const CategoryDetailPage = () => {
           >
             <FolderInput size={16} className="mr-2" /> 转移分类
           </Button>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {isDeleteDialogOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+          <div className="bg-card rounded-[2.5rem] p-8 w-full max-w-[280px] space-y-6 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="text-center space-y-2">
+              <Trash2 size={40} className="mx-auto text-destructive mb-2" />
+              <h3 className="text-lg font-bold text-foreground">删除作品</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                确认删除选中的 {selectedWorkIds.length} 个作品吗？
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button variant="destructive" onClick={confirmBatchDelete} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest">确认删除</Button>
+              <Button variant="ghost" onClick={() => setIsDeleteDialogOpen(false)} className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest text-muted-foreground">返回</Button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -37,6 +37,7 @@ const EditRecordPage = () => {
   const [extraImages, setExtraImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [cropTarget, setCropTarget] = useState<{ type: 'main' | 'extra', index?: number, src: string } | null>(null);
+  const [showWorkAutocomplete, setShowWorkAutocomplete] = useState(false);
 
   useEffect(() => {
     if (record) {
@@ -142,19 +143,49 @@ const EditRecordPage = () => {
 
           <div className="space-y-2">
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">作品名称 *</Label>
-            <Input 
-              placeholder="请输入作品名称" 
-              value={workName} 
-              onChange={(e) => {
-                const newWorkName = e.target.value;
-                setWorkName(newWorkName);
-                // 如果用户没有手动修改过记录名，或者记录名和旧的作品名一致，则同步更新
-                if (!hasManuallyEditedTitle) {
-                  setTitle(newWorkName);
-                }
-              }}
-              className="rounded-xl border-border bg-card"
-            />
+            <div className="relative">
+              <Input
+                placeholder="请输入作品名称"
+                value={workName}
+                onChange={(e) => {
+                  const newWorkName = e.target.value;
+                  setWorkName(newWorkName);
+                  setShowWorkAutocomplete(!!newWorkName);
+                  if (!hasManuallyEditedTitle) {
+                    setTitle(newWorkName);
+                  }
+                }}
+                onFocus={() => workName && setShowWorkAutocomplete(true)}
+                onBlur={() => setTimeout(() => setShowWorkAutocomplete(false), 150)}
+                className="rounded-xl border-border bg-card"
+              />
+              {showWorkAutocomplete && (() => {
+                const q = workName.toLowerCase();
+                const candidates = data.works
+                  .map(w => w.name)
+                  .filter((n, idx, arr) => arr.indexOf(n) === idx)
+                  .filter(n => n.toLowerCase().includes(q) && n !== workName);
+                if (candidates.length === 0) return null;
+                return (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+                    {candidates.slice(0, 5).map(name => (
+                      <button
+                        key={name}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setWorkName(name);
+                          if (!hasManuallyEditedTitle) setTitle(name);
+                          setShowWorkAutocomplete(false);
+                        }}
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors truncate"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
 
           <div className="space-y-2">
