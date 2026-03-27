@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import posthog from 'posthog-js';
 import { Search, ChevronRight } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,7 +59,7 @@ const HomePage = () => {
           <p className="text-sm text-muted-foreground leading-relaxed">
             {data.records.length === 0 ? (
               <>
-                欢迎来到 Foodaily！准备好记录今天的美味了吗？你也可以把以前的好手艺 <Link to="/batch-import" className="text-primary hover:underline font-semibold">批量导入记录</Link>
+                欢迎来到 Foodaily！准备好记录今天的美味了吗？你也可以把以前的好手艺 <Link to="/batch-import" onClick={() => posthog.capture('add_mode_selected', { mode: 'batch', from: 'onboarding' })} className="text-primary hover:underline font-semibold">批量导入记录</Link>
               </>
             ) : (
               <>今天是你记录下厨的第 {recordingDays} 天，{randomSuffix}</>

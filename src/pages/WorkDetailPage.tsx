@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import posthog from 'posthog-js';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { ChevronLeft, Edit3, History } from 'lucide-react';
 import { useApp } from '../store/AppContext';
@@ -26,6 +27,10 @@ const WorkDetailPage = () => {
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
 
   const [viewerOpen, setViewerOpen] = useState(false);
+
+  useEffect(() => {
+    if (work) posthog.capture('work_detail_viewed', { recordCount: records.length });
+  }, [id]);
 
   const coverImages = useMemo(() => {
     if (!work || work.isEmojiCover || !work.coverImage) return [];

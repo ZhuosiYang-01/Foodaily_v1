@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import posthog from 'posthog-js';
 import { useApp } from '../store/AppContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,8 @@ const CalendarPage = () => {
   const { data, getMonthlyStats } = useApp();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => { posthog.capture('calendar_page_viewed'); }, []);
 
   const [showPicker, setShowPicker] = useState(false);
 

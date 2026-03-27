@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import posthog from 'posthog-js';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, ArrowUpDown, History, Star, Calendar, CheckCircle2, Circle, Trash2, FolderInput, X } from 'lucide-react';
 import { useApp } from '../store/AppContext';
@@ -28,6 +29,7 @@ const CategoryDetailPage = () => {
   const handleSortChange = (value: SortType) => {
     setSortBy(value);
     sessionStorage.setItem(`sort_pref_${id}`, value);
+    posthog.capture('sort_mode_changed', { mode: value });
   };
 
   const category = useMemo(() => data.categories.find(c => c.id === id), [id, data.categories]);

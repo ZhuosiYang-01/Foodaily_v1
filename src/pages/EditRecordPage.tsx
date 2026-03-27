@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import EmojiPicker from '../components/EmojiPicker';
 import ImageCropperModal from '../components/ImageCropperModal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import posthog from 'posthog-js';
 import { compressImage, extractPhotoDate } from '../lib/imageUtils';
 
 const EditRecordPage = () => {
@@ -190,6 +191,7 @@ const EditRecordPage = () => {
                           setWorkName(name);
                           if (!hasManuallyEditedTitle) setTitle(name);
                           setShowWorkAutocomplete(false);
+                          posthog.capture('work_autocomplete_selected');
                         }}
                         className="w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors truncate"
                       >

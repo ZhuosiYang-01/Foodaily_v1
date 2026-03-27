@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import localforage from 'localforage';
+import posthog from 'posthog-js';
 import { Category, Work, RecordEntry, AppData, MonthlyStats } from '../types';
 import { supabase } from '../lib/supabase';
 import { fetchDataFromSupabase, syncDataToSupabase } from '../lib/syncService';
@@ -223,6 +224,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        posthog.identify(session.user.id, { email: session.user.email });
+        posthog.capture('user_logged_in');
         setCurrentUserId(session.user.id);
         loadFromCloud(session.user.id);
       } else if (event === 'SIGNED_OUT') {
@@ -265,10 +268,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         setSyncError(null);
         setSyncStatus('idle');
+        posthog.capture('sync_succeeded');
       } catch (e) {
         console.error('Sync failed:', e);
-        setSyncError(e instanceof Error ? e.message : String(e));
+        const errMsg = e instanceof Error ? e.message : String(e);
+        setSyncError(errMsg);
         setSyncStatus('error');
+        posthog.capture('sync_failed', { error: errMsg });
       }
     }, 2000);
 
@@ -440,6 +446,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     localStorage.setItem(INITIALIZED_KEY, 'true');
+    posthog.capture('record_created', {
+      hasImage: !record.isEmojiMain && !!record.mainImage,
+      isEmoji: record.isEmojiMain,
+      hasEvaluation: !!record.evaluation,
+      hasNotes: !!record.notes,
+      hasExtraImages: record.extraImages?.length > 0,
+      categoryId: workInfo.categoryId,
+    });
     return recordId;
   };
 
@@ -519,6 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     localStorage.setItem(INITIALIZED_KEY, 'true');
+    posthog.capture('batch_import_completed', { count: items.length });
   };
 
   const updateRecord = (id: string, record: Partial<RecordEntry>, workInfo?: { name: string; categoryId: string }) => {

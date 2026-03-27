@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import posthog from 'posthog-js';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Edit3, Trash2, Calendar, Star, StickyNote, Image as ImageIcon, ArrowRight, RotateCcw } from 'lucide-react';
 import { useApp } from '../store/AppContext';
@@ -30,6 +31,11 @@ const RecordDetailPage = () => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+
+  useEffect(() => {
+    const fromSource = fromWorkId ? 'work' : backTo?.startsWith('/calendar') ? 'calendar' : 'category';
+    posthog.capture('record_detail_viewed', { fromSource });
+  }, [id]);
 
   const allImages = useMemo(() => {
     if (!record) return [];
@@ -119,7 +125,7 @@ const RecordDetailPage = () => {
           <>
             {prevId ? (
               <button
-                onClick={() => navigate(`/record/${prevId}`, { state: { fromWorkId, recordIds, backTo } })}
+                onClick={() => { posthog.capture('record_swiped', { direction: 'prev' }); navigate(`/record/${prevId}`, { state: { fromWorkId, recordIds, backTo } }); }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-black/30 backdrop-blur-md text-white rounded-full hover:bg-black/50 transition-colors"
               >
                 <ChevronLeft size={22} />
@@ -127,7 +133,7 @@ const RecordDetailPage = () => {
             ) : null}
             {nextId ? (
               <button
-                onClick={() => navigate(`/record/${nextId}`, { state: { fromWorkId, recordIds, backTo } })}
+                onClick={() => { posthog.capture('record_swiped', { direction: 'next' }); navigate(`/record/${nextId}`, { state: { fromWorkId, recordIds, backTo } }); }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 bg-black/30 backdrop-blur-md text-white rounded-full hover:bg-black/50 transition-colors"
               >
                 <ChevronRight size={22} />
@@ -205,7 +211,7 @@ const RecordDetailPage = () => {
         <div className="pt-8 border-t border-border/50 space-y-4">
           <Button 
             className="w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
-            onClick={() => navigate(`/new-record?workId=${work?.id}`)}
+            onClick={() => { posthog.capture('redo_record_tapped', { workId: work?.id }); navigate(`/new-record?workId=${work?.id}`); }}
           >
             再做一次
           </Button>
@@ -214,6 +220,7 @@ const RecordDetailPage = () => {
             to={`/work/${work?.id}`}
             state={fromWorkId ? { backTo } : { fromRecordId: record.id, chainBackTo: backTo }}
             className="flex items-center justify-between w-full p-4 bg-card rounded-2xl group hover:bg-accent transition-colors border border-border/50"
+            onClick={() => posthog.capture('view_all_work_records_tapped')}
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center text-xl shadow-sm">

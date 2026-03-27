@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import posthog from 'posthog-js';
 import { ChevronLeft, LayoutGrid, Info, User, Layers } from 'lucide-react';
 
 const settingsItems = [
@@ -23,6 +24,7 @@ const SettingsPage = () => {
           <Link
             key={item.to}
             to={item.to}
+            onClick={item.to === '/batch-import' ? () => posthog.capture('add_mode_selected', { mode: 'batch', from: 'settings' }) : undefined}
             className="flex items-center justify-between p-5 bg-card rounded-3xl border border-border/50 shadow-sm group hover:shadow-md transition-shadow"
           >
             <div className="flex items-center gap-4">

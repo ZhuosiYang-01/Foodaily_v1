@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import posthog from 'posthog-js';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useApp } from '../store/AppContext';
@@ -22,6 +23,8 @@ const WEEK_LABELS = ['一', '二', '三', '四', '五', '六', '日'];
 const StatsPage = () => {
   const { data } = useApp();
   const navigate = useNavigate();
+
+  useEffect(() => { posthog.capture('stats_page_viewed'); }, []);
 
   const today = new Date().toISOString().slice(0, 10);
   const thisMonth = today.slice(0, 7);
