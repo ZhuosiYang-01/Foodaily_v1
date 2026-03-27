@@ -163,14 +163,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (cloudData) {
         // New user: no categories yet → initialize with defaults and sync to Supabase
         if (cloudData.categories.length === 0) {
-          const initialData: AppData = {
-            categories: DEFAULT_CATEGORIES,
-            works: [],
-            records: [],
-          };
-          setData(initialData);
-          await localforage.setItem(STORAGE_KEY, initialData);
-          await syncDataToSupabase(userId, initialData);
+          const localData = await localforage.getItem<AppData>(STORAGE_KEY);
+          if (localData && (localData.works.length > 0 || localData.records.length > 0)) {
+            // Local data exists but never synced (e.g. network failure) — retry sync, don't wipe
+            const deduped = deduplicateWorks(localData);
+            setData(deduped);
+            await localforage.setItem(STORAGE_KEY, deduped);
+            try { await syncDataToSupabase(userId, deduped); } catch { /* retry next time */ }
+          } else {
+            const initialData: AppData = {
+              categories: DEFAULT_CATEGORIES,
+              works: [],
+              records: [],
+            };
+            setData(initialData);
+            await localforage.setItem(STORAGE_KEY, initialData);
+            try { await syncDataToSupabase(userId, initialData); } catch { /* retry next time */ }
+          }
         } else {
           // Merge local + cloud: keep any local records/works not yet synced to cloud
           const localData = await localforage.getItem<AppData>(STORAGE_KEY);
