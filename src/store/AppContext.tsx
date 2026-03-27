@@ -108,6 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [syncError, setSyncError] = useState<string | null>(null);
   const isSyncingFromCloud = useRef(false);
+  const isSigningOut = useRef(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dataRef = useRef(data);
   useEffect(() => { dataRef.current = data; }, [data]);
@@ -144,6 +145,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isLoading) return;
     
     const saveData = async () => {
+      if (isSigningOut.current) return;
       try {
         await localforage.setItem(STORAGE_KEY, data);
       } catch (e) {
@@ -225,8 +227,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loadFromCloud(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         setCurrentUserId(null);
-        // Reset to empty state on logout
+        isSigningOut.current = true;
         setData({ categories: DEFAULT_CATEGORIES, works: [], records: [] });
+        setTimeout(() => { isSigningOut.current = false; }, 100);
       }
     });
 
