@@ -142,11 +142,6 @@ const NewRecordPage = () => {
 
     try {
       console.log('Attempting to save record...');
-      // TODO: 临时预览里程碑，看完删掉
-      setPendingNav(`/record/preview`);
-      setDishMilestone({ count: 10, workName: '红烧肉' });
-      return;
-
       const { dish, works } = computeMilestones();
 
       const recordId = addRecord(
