@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import EmojiPicker from '../components/EmojiPicker';
 import ImageCropperModal from '../components/ImageCropperModal';
+import MilestoneBadgeModal from '../components/MilestoneBadgeModal';
+import WorksMilestoneScreen from '../components/WorksMilestoneScreen';
 import { compressImage, extractPhotoDate } from '../lib/imageUtils';
 
 const NewRecordPage = () => {
@@ -51,6 +53,9 @@ const NewRecordPage = () => {
   const [notes, setNotes] = useState('');
   const [extraImages, setExtraImages] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingNav, setPendingNav] = useState<string | null>(null);
+  const [dishMilestone, setDishMilestone] = useState<{ count: 5 | 10 | 20; workName: string } | null>(null);
+  const [worksMilestone, setWorksMilestone] = useState<{ total: number } | null>(null);
 
   // Derived State
   const selectedCategory = useMemo(() => data.categories.find(c => c.id === categoryId), [categoryId, data.categories]);
@@ -101,12 +106,49 @@ const NewRecordPage = () => {
     e.target.value = '';
   };
 
+  const computeMilestones = () => {
+    const name = workName || '未命名作品';
+
+    // Dish milestone: find the work (existing or name-matched)
+    let workId = selectedWorkId;
+    if (!workId) {
+      const existing = data.works.find(w => w.name === name && w.categoryId === categoryId);
+      workId = existing?.id ?? null;
+    }
+    let dish: { count: 5 | 10 | 20; workName: string } | null = null;
+    if (workId) {
+      const nextCount = data.records.filter(r => r.workId === workId).length + 1;
+      if (nextCount === 5 || nextCount === 10 || nextCount === 20) {
+        dish = { count: nextCount as 5 | 10 | 20, workName: name };
+      }
+    }
+
+    // Works milestone: only if this creates a brand-new work
+    const isNewWork = !selectedWorkId && !data.works.find(w => w.name === name && w.categoryId === categoryId);
+    let works: { total: number } | null = null;
+    if (isNewWork) {
+      const newTotal = data.works.length + 1;
+      if (newTotal % 50 === 0) {
+        works = { total: newTotal };
+      }
+    }
+
+    return { dish, works };
+  };
+
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
-    
+
     try {
       console.log('Attempting to save record...');
+      // TODO: 临时预览里程碑，看完删掉
+      setPendingNav(`/record/preview`);
+      setDishMilestone({ count: 10, workName: '红烧肉' });
+      return;
+
+      const { dish, works } = computeMilestones();
+
       const recordId = addRecord(
         {
           workId: selectedWorkId || '',
@@ -128,23 +170,38 @@ const NewRecordPage = () => {
           isEmoji: isEmojiMain,
         }
       );
-      
+
       if (!recordId) {
         throw new Error('Failed to generate record ID');
       }
 
-      console.log('Record saved with ID:', recordId);
-      
-      // Use a slightly longer timeout and check if navigation works
-      setTimeout(() => {
-        navigate(`/record/${recordId}`, { replace: true });
-      }, 100);
+      const dest = `/record/${recordId}`;
+
+      if (dish || works) {
+        setPendingNav(dest);
+        if (dish) setDishMilestone(dish);
+        else if (works) setWorksMilestone(works);
+      } else {
+        setTimeout(() => navigate(dest, { replace: true }), 100);
+      }
     } catch (error) {
       console.error('Save failed:', error);
       setIsSaving(false);
       const errorMessage = error instanceof Error ? error.message : '未知错误';
       alert(`保存失败: ${errorMessage}\n请检查存储空间是否充足。`);
     }
+  };
+
+  const handleDishMilestoneContinue = () => {
+    setDishMilestone(null);
+    // If there's also a works milestone pending, show it next
+    if (worksMilestone) return;
+    if (pendingNav) navigate(pendingNav, { replace: true });
+  };
+
+  const handleWorksMilestoneContinue = () => {
+    setWorksMilestone(null);
+    if (pendingNav) navigate(pendingNav, { replace: true });
   };
 
   const isStep1Valid = workName && categoryId && date && mainImage;
@@ -417,6 +474,21 @@ const NewRecordPage = () => {
           }}
         />
       )}
+
+      {/* Milestone overlays */}
+      {dishMilestone && (
+        <MilestoneBadgeModal
+          isOpen={!!dishMilestone}
+          count={dishMilestone.count}
+          workName={dishMilestone.workName}
+          onContinue={handleDishMilestoneContinue}
+        />
+      )}
+      <WorksMilestoneScreen
+        isOpen={!!worksMilestone}
+        total={worksMilestone?.total ?? 0}
+        onContinue={handleWorksMilestoneContinue}
+      />
     </div>
   );
 };

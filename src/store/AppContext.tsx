@@ -252,7 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Debounced sync to Supabase after data changes
   useEffect(() => {
-    if (!currentUserId || isLoading || isSyncingFromCloud.current) return;
+    if (!currentUserId || isLoading || isSyncingFromCloud.current || isUndoVisible) return;
 
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(async () => {
@@ -823,6 +823,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const finalizeDelete = () => {
+    // Immediately delete from Supabase before clearing lastDeleted
+    if (lastDeleted && currentUserId) {
+      const toDelete = lastDeleted;
+      (async () => {
+        try {
+          if (toDelete.type === 'record') {
+            const record = toDelete.data as RecordEntry;
+            const recordIds = [record.id];
+            // If this was the last record for its work, the work was also removed locally
+            const workIds = toDelete.relatedWork ? [toDelete.relatedWork.id] : [];
+            await Promise.all([
+              supabase.from('records').delete().in('id', recordIds),
+              workIds.length > 0 ? supabase.from('works').delete().in('id', workIds) : Promise.resolve(),
+            ]);
+          } else if (toDelete.type === 'work') {
+            const work = toDelete.data as Work;
+            const relatedRecords = toDelete.relatedRecords ?? [];
+            const recordIds = relatedRecords.map(r => r.id);
+            await Promise.all([
+              supabase.from('works').delete().eq('id', work.id),
+              recordIds.length > 0 ? supabase.from('records').delete().in('id', recordIds) : Promise.resolve(),
+            ]);
+          } else if (toDelete.type === 'works') {
+            const works = toDelete.data as Work[];
+            const workIds = works.map(w => w.id);
+            const relatedRecords = toDelete.relatedRecords ?? [];
+            const recordIds = relatedRecords.map(r => r.id);
+            await Promise.all([
+              supabase.from('works').delete().in('id', workIds),
+              recordIds.length > 0 ? supabase.from('records').delete().in('id', recordIds) : Promise.resolve(),
+            ]);
+          } else if (toDelete.type === 'category') {
+            const category = toDelete.data as Category;
+            const relatedWorks = toDelete.relatedWorks ?? [];
+            const workIds = relatedWorks.map(w => w.id);
+            const relatedRecords = toDelete.relatedRecords ?? [];
+            const recordIds = relatedRecords.map(r => r.id);
+            await Promise.all([
+              supabase.from('categories').delete().eq('id', category.id),
+              workIds.length > 0 ? supabase.from('works').delete().in('id', workIds) : Promise.resolve(),
+              recordIds.length > 0 ? supabase.from('records').delete().in('id', recordIds) : Promise.resolve(),
+            ]);
+          }
+        } catch (e) {
+          console.error('finalizeDelete: Supabase delete failed', e);
+        }
+      })();
+    }
+
     setLastDeleted(null);
     setIsUndoVisible(false);
     setUndoType(null);

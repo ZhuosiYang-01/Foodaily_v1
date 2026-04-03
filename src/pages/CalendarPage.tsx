@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ChevronDown, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import posthog from 'posthog-js';
 import { useApp } from '../store/AppContext';
@@ -97,9 +97,18 @@ const CalendarPage = () => {
     <div className="pb-24 pt-6 px-4 space-y-8 animate-in fade-in duration-500">
       {/* Header & Copy */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <CalendarIcon size={24} className="text-primary" /> 日历
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <CalendarIcon size={24} className="text-primary" /> 日历
+          </h1>
+          <button
+            onClick={() => navigate('/stats')}
+            className="flex items-center gap-1.5 bg-primary/10 text-primary rounded-full px-3 py-1.5 text-xs font-bold hover:bg-primary/20 transition-colors"
+          >
+            <BarChart2 size={13} />
+            烹饪报告
+          </button>
+        </div>
         <p className="text-sm text-muted-foreground italic leading-relaxed">
           {randomCopy}
         </p>
