@@ -73,6 +73,7 @@ export async function fetchDataFromSupabase(userId: string): Promise<AppData | n
       date: r.date,
       title: r.title,
       taste: (r as any).taste || undefined,
+      recipeUrl: r.recipe_url || undefined,
       evaluation: r.evaluation || '',
       notes: r.notes || '',
       mainImage: r.main_image || '',
@@ -151,6 +152,7 @@ export async function syncDataToSupabase(userId: string, data: AppData): Promise
       title: r.title,
       date: r.date,
       // taste column not in DB schema — omitted
+      recipe_url: r.recipeUrl ?? null,
       evaluation: r.evaluation ?? null,
       notes: r.notes ?? null,
       main_image: r.mainImage,

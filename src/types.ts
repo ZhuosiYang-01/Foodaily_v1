@@ -24,6 +24,7 @@ export type RecordEntry = {
   date: string; // YYYY-MM-DD
   title: string; // 记录名称
   taste?: string; // 口味
+  recipeUrl?: string; // 菜谱链接
   evaluation: string; // 评价
   notes: string; // 备忘
   mainImage: string;

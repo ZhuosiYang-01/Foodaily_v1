@@ -7,9 +7,19 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import ImageViewer from '../components/ImageViewer';
+import { getXiaohongshuDeepLink, isXiaohongshuUrl } from '../lib/recipeLinks';
 
 const XIAOHONGSHU_SNOW_MOCHI_RECIPE = 'https://www.xiaohongshu.com/discovery/item/69884717000000001a01cf4b?source=webshare&xhsshare=pc_web&xsec_token=ABO9BHYbdloyawwonYu_xhLy0hYGSpssyL2wGY562vstI%3D&xsec_source=pc_share';
-const XIAOHONGSHU_SNOW_MOCHI_DEEP_LINK = 'xhsdiscover://item/69884717000000001a01cf4b';
+
+const XiaohongshuLogo = () => (
+  <svg viewBox="0 0 42 20" className="h-5 w-[42px] text-primary" role="img" aria-label="小红书">
+    <g fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 5l8 10M11 5 3 15" />
+      <path d="M16 3v14M16 10h8M24 3v14" />
+      <path d="M38 6.2c-1-1.2-2.5-1.8-4.1-1.8-2.2 0-3.9 1.1-3.9 2.8 0 4.3 8.5 1.2 8.5 6 0 1.8-1.8 3-4.2 3-1.8 0-3.5-.7-4.6-2" />
+    </g>
+  </svg>
+);
 
 const WorkDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +38,9 @@ const WorkDetailPage = () => {
     [id, data.records]
   );
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
-  const recipeUrl = work?.name.trim() === '雪媚娘' ? XIAOHONGSHU_SNOW_MOCHI_RECIPE : undefined;
+  const recipeUrl = records.find(record => record.recipeUrl)?.recipeUrl
+    || (work?.name.trim() === '雪媚娘' ? XIAOHONGSHU_SNOW_MOCHI_RECIPE : undefined);
+  const isXiaohongshuRecipe = recipeUrl ? isXiaohongshuUrl(recipeUrl) : false;
 
   const [viewerOpen, setViewerOpen] = useState(false);
 
@@ -44,10 +56,11 @@ const WorkDetailPage = () => {
   const handleRecipeClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (!work || !recipeUrl) return;
 
-    posthog.capture('recipe_link_opened', { source: 'xiaohongshu', workId: work.id });
+    posthog.capture('recipe_link_opened', { source: isXiaohongshuRecipe ? 'xiaohongshu' : 'external', workId: work.id });
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (!isMobile) return;
+    const deepLink = getXiaohongshuDeepLink(recipeUrl);
+    if (!isMobile || !deepLink) return;
 
     event.preventDefault();
     let appOpened = false;
@@ -57,7 +70,7 @@ const WorkDetailPage = () => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.location.href = XIAOHONGSHU_SNOW_MOCHI_DEEP_LINK;
+    window.location.href = deepLink;
 
     window.setTimeout(() => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -126,11 +139,11 @@ const WorkDetailPage = () => {
           <a
             href={recipeUrl}
             rel="noopener noreferrer external"
-            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-[#ff2442] px-4 py-3 text-sm font-bold text-white shadow-md shadow-[#ff2442]/20 transition-colors hover:bg-[#e91f3b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2442] focus-visible:ring-offset-2"
+            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             onClick={handleRecipeClick}
           >
-            <span>在小红书查看菜谱</span>
-            <ExternalLink size={18} aria-hidden="true" />
+            <span>跳转菜谱链接</span>
+            {isXiaohongshuRecipe ? <XiaohongshuLogo /> : <ExternalLink size={18} className="text-muted-foreground" aria-hidden="true" />}
           </a>
         )}
 

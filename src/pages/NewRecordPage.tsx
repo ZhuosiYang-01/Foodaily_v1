@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Camera, Smile, X, Check, Search, Scissors } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Camera, Smile, X, Check, Search, Scissors, Link2 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import ImageCropperModal from '../components/ImageCropperModal';
 import MilestoneBadgeModal from '../components/MilestoneBadgeModal';
 import WorksMilestoneScreen from '../components/WorksMilestoneScreen';
 import { compressImage, extractPhotoDate } from '../lib/imageUtils';
+import { extractRecipeUrl, isValidRecipeUrl } from '../lib/recipeLinks';
 
 const NewRecordPage = () => {
   const { data, addRecord } = useApp();
@@ -49,6 +50,8 @@ const NewRecordPage = () => {
   // Step 2 State
   const [taste, setTaste] = useState('');
   const [recordTitle, setRecordTitle] = useState('');
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [recipeUrlError, setRecipeUrlError] = useState('');
   const [evaluation, setEvaluation] = useState('');
   const [notes, setNotes] = useState('');
   const [extraImages, setExtraImages] = useState<string[]>([]);
@@ -138,6 +141,11 @@ const NewRecordPage = () => {
 
   const handleSave = async () => {
     if (isSaving) return;
+    const trimmedRecipeUrl = extractRecipeUrl(recipeUrl.trim());
+    if (!isValidRecipeUrl(trimmedRecipeUrl)) {
+      setRecipeUrlError('请输入以 http:// 或 https:// 开头的完整链接');
+      return;
+    }
     setIsSaving(true);
 
     try {
@@ -150,6 +158,7 @@ const NewRecordPage = () => {
           date,
           title: recordTitle || workName || '未命名记录',
           taste,
+          recipeUrl: trimmedRecipeUrl || undefined,
           evaluation,
           notes,
           mainImage,
@@ -384,6 +393,46 @@ const NewRecordPage = () => {
                   onChange={(e) => setRecordTitle(e.target.value)}
                   className="rounded-xl border-border bg-card"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="recipe-url" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  菜谱链接（选填）
+                </Label>
+                <div className="relative">
+                  <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id="recipe-url"
+                    type="url"
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    placeholder="粘贴小红书或其他菜谱链接"
+                    value={recipeUrl}
+                    onChange={(event) => {
+                      setRecipeUrl(event.target.value);
+                      if (recipeUrlError) setRecipeUrlError('');
+                    }}
+                    onPaste={(event) => {
+                      const pastedUrl = extractRecipeUrl(event.clipboardData.getData('text'));
+                      if (pastedUrl !== event.clipboardData.getData('text')) {
+                        event.preventDefault();
+                        setRecipeUrl(pastedUrl);
+                        setRecipeUrlError('');
+                      }
+                    }}
+                    aria-invalid={!!recipeUrlError}
+                    aria-describedby={recipeUrlError ? 'recipe-url-error' : 'recipe-url-help'}
+                    className="rounded-xl border-border bg-card pl-10 aria-[invalid=true]:border-destructive"
+                  />
+                </div>
+                {recipeUrlError ? (
+                  <p id="recipe-url-error" className="text-[11px] leading-relaxed text-destructive">{recipeUrlError}</p>
+                ) : (
+                  <p id="recipe-url-help" className="text-[11px] leading-relaxed text-muted-foreground">
+                    小红书链接请粘贴完整分享链接。
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
