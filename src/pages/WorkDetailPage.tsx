@@ -9,6 +9,7 @@ import { formatDate } from '@/lib/utils';
 import ImageViewer from '../components/ImageViewer';
 
 const XIAOHONGSHU_SNOW_MOCHI_RECIPE = 'https://www.xiaohongshu.com/discovery/item/69884717000000001a01cf4b?source=webshare&xhsshare=pc_web&xsec_token=ABO9BHYbdloyawwonYu_xhLy0hYGSpssyL2wGY562vstI%3D&xsec_source=pc_share';
+const XIAOHONGSHU_SNOW_MOCHI_DEEP_LINK = 'xhsdiscover://item/69884717000000001a01cf4b';
 
 const WorkDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +40,32 @@ const WorkDetailPage = () => {
     if (!work || work.isEmojiCover || !work.coverImage) return [];
     return [work.originalCoverImage || work.coverImage];
   }, [work]);
+
+  const handleRecipeClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!work || !recipeUrl) return;
+
+    posthog.capture('recipe_link_opened', { source: 'xiaohongshu', workId: work.id });
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    event.preventDefault();
+    let appOpened = false;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') appOpened = true;
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.location.href = XIAOHONGSHU_SNOW_MOCHI_DEEP_LINK;
+
+    window.setTimeout(() => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (!appOpened && document.visibilityState === 'visible') {
+        window.location.href = recipeUrl;
+      }
+    }, 1800);
+  };
 
   if (!work) return null;
 
@@ -100,7 +127,7 @@ const WorkDetailPage = () => {
             href={recipeUrl}
             rel="noopener noreferrer external"
             className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-[#ff2442] px-4 py-3 text-sm font-bold text-white shadow-md shadow-[#ff2442]/20 transition-colors hover:bg-[#e91f3b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2442] focus-visible:ring-offset-2"
-            onClick={() => posthog.capture('recipe_link_opened', { source: 'xiaohongshu', workId: work.id })}
+            onClick={handleRecipeClick}
           >
             <span>在小红书查看菜谱</span>
             <ExternalLink size={18} aria-hidden="true" />
