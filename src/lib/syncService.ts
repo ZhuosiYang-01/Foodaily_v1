@@ -59,6 +59,7 @@ export async function fetchDataFromSupabase(userId: string): Promise<AppData | n
       id: w.id,
       categoryId: w.category_id,
       name: w.name,
+      recipeUrl: w.recipe_url || undefined,
       coverImage: w.cover_image || '',
       originalCoverImage: w.original_cover_image || undefined,
       isEmojiCover: w.is_emoji_cover ?? false,
@@ -134,6 +135,7 @@ export async function syncDataToSupabase(userId: string, data: AppData): Promise
       user_id: userId,
       category_id: w.categoryId,
       name: w.name,
+      recipe_url: w.recipeUrl ?? null,
       cover_image: w.coverImage,
       // Drop original if upload failed — never store base64 in DB
       original_cover_image: isBase64(w.originalCoverImage ?? '') ? null : (w.originalCoverImage ?? null),

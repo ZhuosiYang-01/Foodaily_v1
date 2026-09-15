@@ -10,6 +10,7 @@ export type Work = {
   id: string;
   categoryId: string;
   name: string;
+  recipeUrl?: string; // 菜谱链接
   coverImage: string; // 图片 URL 或 base64 或 emoji
   originalCoverImage?: string; // 裁剪前的原图
   isEmojiCover: boolean;

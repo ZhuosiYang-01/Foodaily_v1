@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Camera, Smile, X, Scissors, Images, Trash2 } from 'lucide-react';
+import { ChevronLeft, Camera, Smile, X, Scissors, Images, Trash2, Link2 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { motion, AnimatePresence } from 'motion/react';
 import EmojiPicker from '../components/EmojiPicker';
 import ImageCropperModal from '../components/ImageCropperModal';
+import { extractRecipeUrl, isValidRecipeUrl } from '../lib/recipeLinks';
 
 const EditWorkPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,8 @@ const EditWorkPage = () => {
 
   // State
   const [name, setName] = useState('');
+  const [recipeUrl, setRecipeUrl] = useState('');
+  const [recipeUrlError, setRecipeUrlError] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [originalCoverImage, setOriginalCoverImage] = useState<string | undefined>();
@@ -46,6 +49,7 @@ const EditWorkPage = () => {
   useEffect(() => {
     if (work) {
       setName(work.name);
+      setRecipeUrl(work.recipeUrl || '');
       setCategoryId(work.categoryId);
       setCoverImage(work.coverImage);
       setOriginalCoverImage(work.originalCoverImage);
@@ -70,8 +74,14 @@ const EditWorkPage = () => {
 
   const handleSave = () => {
     if (!id) return;
+    const trimmedRecipeUrl = extractRecipeUrl(recipeUrl.trim());
+    if (!isValidRecipeUrl(trimmedRecipeUrl)) {
+      setRecipeUrlError('请输入以 http:// 或 https:// 开头的完整链接');
+      return;
+    }
     updateWork(id, {
       name,
+      recipeUrl: trimmedRecipeUrl || undefined,
       categoryId,
       coverImage,
       originalCoverImage,
@@ -119,6 +129,47 @@ const EditWorkPage = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="work-recipe-url" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              菜谱链接（选填）
+            </Label>
+            <div className="relative">
+              <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="work-recipe-url"
+                type="url"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder="粘贴小红书或其他菜谱链接"
+                value={recipeUrl}
+                onChange={(event) => {
+                  setRecipeUrl(event.target.value);
+                  if (recipeUrlError) setRecipeUrlError('');
+                }}
+                onPaste={(event) => {
+                  const pastedText = event.clipboardData.getData('text');
+                  const pastedUrl = extractRecipeUrl(pastedText);
+                  if (pastedUrl !== pastedText) {
+                    event.preventDefault();
+                    setRecipeUrl(pastedUrl);
+                    setRecipeUrlError('');
+                  }
+                }}
+                aria-invalid={!!recipeUrlError}
+                aria-describedby={recipeUrlError ? 'work-recipe-url-error' : 'work-recipe-url-help'}
+                className="rounded-xl border-border bg-card pl-10 aria-[invalid=true]:border-destructive"
+              />
+            </div>
+            {recipeUrlError ? (
+              <p id="work-recipe-url-error" className="text-[11px] leading-relaxed text-destructive">{recipeUrlError}</p>
+            ) : (
+              <p id="work-recipe-url-help" className="text-[11px] leading-relaxed text-muted-foreground">
+                若制作记录填写过链接，详情页会优先使用最近一次记录的链接。
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
