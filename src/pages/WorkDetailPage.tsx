@@ -1,12 +1,14 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import posthog from 'posthog-js';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { ChevronLeft, Edit3, History } from 'lucide-react';
+import { ChevronLeft, Edit3, ExternalLink, History } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import ImageViewer from '../components/ImageViewer';
+
+const XIAOHONGSHU_SNOW_MOCHI_RECIPE = 'https://www.xiaohongshu.com/discovery/item/69884717000000001a01cf4b?source=webshare&xhsshare=pc_web&xsec_token=ABO9BHYbdloyawwonYu_xhLy0hYGSpssyL2wGY562vstI%3D&xsec_source=pc_share';
 
 const WorkDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +27,7 @@ const WorkDetailPage = () => {
     [id, data.records]
   );
   const category = useMemo(() => data.categories.find(c => c.id === work?.categoryId), [work, data.categories]);
+  const recipeUrl = work?.name.trim() === '雪媚娘' ? XIAOHONGSHU_SNOW_MOCHI_RECIPE : undefined;
 
   const [viewerOpen, setViewerOpen] = useState(false);
 
@@ -92,6 +95,18 @@ const WorkDetailPage = () => {
 
       {/* History Section */}
       <div className="p-6 space-y-6">
+        {recipeUrl && (
+          <a
+            href={recipeUrl}
+            rel="noopener noreferrer external"
+            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl bg-[#ff2442] px-4 py-3 text-sm font-bold text-white shadow-md shadow-[#ff2442]/20 transition-colors hover:bg-[#e91f3b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff2442] focus-visible:ring-offset-2"
+            onClick={() => posthog.capture('recipe_link_opened', { source: 'xiaohongshu', workId: work.id })}
+          >
+            <span>在小红书查看菜谱</span>
+            <ExternalLink size={18} aria-hidden="true" />
+          </a>
+        )}
+
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
             <History size={16} /> 已做 {records.length} 次
