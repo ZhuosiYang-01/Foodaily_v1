@@ -1,20 +1,39 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+# Foodaily
+
+### 把每一次下厨，都收藏成看得见的成长
+
+Foodaily 是一款为烹饪爱好者打造的私人厨房日记，帮助你记录每一次下厨的作品、过程与心得，让散落在相册里的美食记忆，沉淀为专属于你的烹饪作品集。
+
+[在线体验](https://www.foodaily.top)
+
 </div>
 
-# Run and deploy your AI Studio app
+## 产品亮点
 
-This contains everything you need to run your app locally.
+- **记录下厨时刻**：保存菜品照片、制作日期、评分和心得，完整留下每一次尝试。
+- **沉淀个人作品**：同一道菜可以持续添加记录，清晰看见手艺的变化与进步。
+- **分类整理作品**：按自定义分类管理你的烹饪成果，快速找到想回顾的内容。
+- **回顾烹饪足迹**：通过日历、搜索和数据统计，重新发现每一段美味记忆。
+- **轻松导入记录**：支持批量导入过往作品，让手机相册里的美食拥有自己的归属。
+- **多端同步数据**：登录账号后同步个人记录，随时继续书写厨房故事。
 
-View your app in AI Studio: https://ai.studio/apps/45cc7445-b6a0-4451-86d2-7f7e06001c37
+## 开始使用
 
-## Run Locally
+访问 [www.foodaily.top](https://www.foodaily.top)，创建属于你的私人厨房日记。
 
-**Prerequisites:**  Node.js
+## 本地开发
 
+需要安装 [Node.js](https://nodejs.org/)。
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev
+```
+
+开发服务器默认运行在 `http://localhost:3000`。
+
+## 技术栈
+
+React、TypeScript、Vite、Tailwind CSS、Supabase
